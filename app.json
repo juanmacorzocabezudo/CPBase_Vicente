@@ -1,0 +1,54 @@
+{
+  "id": "9e6357ac-83ea-4113-bb11-35144e9def98",
+  "name": "Comidas Populares Base",
+  "publisher": "Vicente Pastor Tejero",
+  "version": "27.5.0.7",
+  "brief": "",
+  "description": "",
+  "privacyStatement": "",
+  "EULA": "",
+  "help": "",
+  "url": "",
+  "logo": "",
+  "dependencies": [
+    {
+      "id": "f2103434-723a-4bcf-8062-8398ff69bc9e",
+      "name": "Formatos Alxia",
+      "version": "0.0.0.0",
+      "publisher": "Alxia"
+    },
+
+    {
+      "id": "e425495b-7717-4f65-a538-6528bf549000",
+      "name": "CP - Functionality",
+      "version": "0.0.0.0",
+      "publisher": "Alxia Consultoria e innovación"
+    },
+    {
+      "id": "f055119a-8dbe-4a0b-8c3d-1f2e5f7b6c9d",
+      "name": "CP - Feature",
+      "version": "0.0.0.0",
+      "publisher": "Alxia Consultoria e innovación"
+    }
+  ],
+  "screenshots": [],
+  "platform": "1.0.0.0",
+  "application": "27.0.0.0",
+  "idRanges": [
+    {
+      "from": 60000,
+      "to": 60500
+    }
+  ],
+  "resourceExposurePolicy": {
+    "allowDebugging": false,
+    "allowDownloadingSource": false,
+    "includeSourceInSymbolFile": false
+  },
+  "runtime": "16.0",
+  "features": [
+    "NoImplicitWith",
+    "TranslationFile",
+    "GenerateCaptions"
+  ]
+}

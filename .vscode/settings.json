@@ -1,0 +1,40 @@
+{
+    // --- CRS AL Naming Rules ---
+    "CRS.RenameWithGit": false,
+    "CRS.OnSaveAlFileAction": "Rename",
+    "CRS.FileNamePatternExtensions": "<ObjectId>.<BaseId>.CP.<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",
+    "CRS.FileNamePattern": "<ObjectId>.CP.<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",    
+    "CRS.ExtensionObjectNamePattern": "",
+    "CRS.FileNamePatternPageCustomizations": "<ObjectTypeShort><BaseId>-CP.PageCust.<ObjectNameShort>.al",
+
+    // --- AL Code Analyzers ---
+    "al.enableCodeAnalysis": true,
+    "al.codeAnalyzers":     
+    [
+        "${CodeCop}",
+        "${PerTenantExtensionCop}",
+        "${UICop}"
+    ],
+    "al.ruleSetPath": "./.vscode/custom.ruleset.json",
+    "al.packageCachePath": ".alpackages",
+
+    // --- AL Outline Tooltip Templates ---
+    "alOutline.defaultAppArea": "All",
+    "alOutline.pageActionToolTip" :"Executes the %1 action.",
+    "alOutline.pageFieldToolTip": "%Caption%",
+    "[al]": {
+        "editor.formatOnSave": true
+    },
+
+    // --- XLIFF Sync ---
+    "xliffSync.baseFile": "Comidas Populares Base.g.xlf",
+
+    // --- VS Code UX Improvements ---
+    "problems.showCurrentInStatus": true,
+    "chat.tools.terminal.autoApprove": {
+        "/^python3 /tmp/create_word_final\\.py 2>&1 \\|\\| echo \"No existe, creando\\.\\.\\.\" && python3 << 'PYSCRIPT'\nfrom zipfile import ZipFile\nimport os\n\ndocx = \"/Users/vicentepastortejero/Documents/Business Central/Comidas Populares/ComidasPopulares\\.Base/src/report/layout/ReceipPart\\.docx\"\n\ndoc = '''<\\?xml version=\"1\\.0\" encoding=\"UTF-8\" standalone=\"yes\"\\?>\n<w:document xmlns:w=\"http://schemas\\.openxmlformats\\.org/wordprocessingml/2006/main\"><w:body>\n<w:p><w:pPr><w:jc w:val=\"center\"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val=\"32\"/></w:rPr><w:t>PARTE RECETA</w:t></w:r></w:p><w:p/>\n<w:tbl><w:tblPr><w:tblW w:w=\"5000\" w:type=\"pct\"/></w:tblPr>\n<w:tr><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Descripción</w:t></w:r></w:p></w:tc><w:tc><w:p><w:sdt><w:sdtPr><w:tag w:val=\"Description_Item\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc></w:tr>\n<w:tr><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Nº</w:t></w:r></w:p></w:tc><w:tc><w:p><w:sdt><w:sdtPr><w:tag w:val=\"No_Item\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc></w:tr>\n<w:tr><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Lote</w:t></w:r></w:p></w:tc><w:tc><w:p><w:sdt><w:sdtPr><w:tag w:val=\"LoteReceta_Item\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc></w:tr>\n<w:tr><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Estadístico</w:t></w:r></w:p></w:tc><w:tc><w:p><w:sdt><w:sdtPr><w:tag w:val=\"StatisticsLot_Item\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc></w:tr>\n</w:tbl>\n<w:p><w:pPr><w:spacing w:before=\"200\"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val=\"24\"/><w:color w:val=\"8B0000\"/></w:rPr><w:t>INGREDIENTES</w:t></w:r></w:p>\n<w:tbl><w:tblPr><w:tblW w:w=\"5000\" w:type=\"pct\"/></w:tblPr>\n<w:tr><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Descripción</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Cantidad</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill=\"8B0000\"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val=\"FFFFFF\"/></w:rPr><w:t>Ud</w:t></w:r></w:p></w:tc></w:tr>\n<w:sdt><w:sdtPr><w:tag w:val=\"BOM_x0020_Component\"/></w:sdtPr><w:sdtContent>\n<w:tr><w:tc><w:p><w:sdt><w:sdtPr><w:tag w:val=\"varDescription\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc><w:tc><w:p><w:pPr><w:jc w:val=\"right\"/></w:pPr><w:sdt><w:sdtPr><w:tag w:val=\"CantidadporLote_BOMComponent\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc><w:tc><w:p><w:sdt><w:sdtPr><w:tag w:val=\"UnitofMeasureCode_BOMComponent\"/></w:sdtPr><w:sdtContent><w:r><w:t/></w:r></w:sdtContent></w:sdt></w:p></w:tc></w:tr>\n</w:sdtContent></w:sdt>\n</w:tbl>\n<w:p><w:pPr><w:spacing w:before=\"200\"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val=\"24\"/><w:color w:val=\"8B0000\"/></w:rPr><w:t>ELABORACIÓN</w:t></w:r></w:p>\n<w:sdt><w:sdtPr><w:tag w:val=\"ElaborationText\"/><w:richText/></w:sdtPr><w:sdtContent><w:p><w:r><w:t/></w:r></w:p></w:sdtContent></w:sdt>\n<w:sectPr><w:pgSz w:w=\"11906\" w:h=\"16838\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\" w:header=\"720\" w:footer=\"720\" w:gutter=\"0\"/></w:sectPr>\n</w:body></w:document>'''\n\nct = '<\\?xml version=\"1\\.0\"\\?><Types xmlns=\"http://schemas\\.openxmlformats\\.org/package/2006/content-types\"><Default Extension=\"rels\" ContentType=\"application/vnd\\.openxmlformats-package\\.relationships\\+xml\"/><Default Extension=\"xml\" ContentType=\"application/xml\"/><Override PartName=\"/word/document\\.xml\" ContentType=\"application/vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document\\.main\\+xml\"/></Types>'\nrl = '<\\?xml version=\"1\\.0\"\\?><Relationships xmlns=\"http://schemas\\.openxmlformats\\.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas\\.openxmlformats\\.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document\\.xml\"/></Relationships>'\n\nwith ZipFile\\(docx, 'w'\\) as z:\n    z\\.writestr\\('\\[Content_Types\\]\\.xml', ct\\)\n    z\\.writestr\\('_rels/\\.rels', rl\\)\n    z\\.writestr\\('word/document\\.xml', doc\\)\nprint\\(\"OK - Archivo creado\"\\)\nPYSCRIPT\n$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    },
+}

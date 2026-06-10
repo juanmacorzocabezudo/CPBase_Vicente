@@ -1,0 +1,29 @@
+# --- AL Project Output ---
+*.app
+
+# --- AL Packages / Dependencias descargadas ---
+*.alpackages/
+
+# --- Carpetas temporales / compilación ---
+*.alcache
+*.vs/
+*.user
+*.suo
+*.nupkg
+*.lock.json
+*.log
+*.tmp
+temp/
+TestResults/
+*.code-workspace
+rad.json
+
+# --- macOS / Windows / Linux system files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# --- Git merge conflict files ---
+*.orig
+*.rej

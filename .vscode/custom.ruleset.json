@@ -1,0 +1,27 @@
+{
+    "name": "Custom ruleset",
+    "description": "Set some rules as hidden",
+    "generalAction": "Warning",
+    "rules": [
+        {
+            "id": "AA0215",
+            "action": "Hidden",
+            "justification": "Allow our name system with object number first in workspace"           
+        },
+        {
+            "id": "AA0232",
+            "action": "Hidden",
+            "justification": "False Warnings as read it in https://github.com/microsoft/AL/issues/6140"           
+        },
+        {
+            "id": "AL0603",
+            "action": "Hidden",
+            "justification": "False Warnings as not another option in that code"           
+        },
+        {
+            "id": "PTE0014",
+            "action": "Hidden",
+            "justification": "False Warning as detected en git hub"           
+        }
+    ]
+}
