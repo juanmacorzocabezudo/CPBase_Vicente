@@ -274,8 +274,8 @@
           <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - NamedType EmailSendFailedMsg</note>
         </trans-unit>
         <trans-unit id="Codeunit 3519696695 - NamedType 2348355818" size-unit="char" translate="yes" xml:space="preserve">
-          <source>&lt;td&gt;%1 (%2 %)&lt;/td&gt;</source>
-          <note from="Developer" annotates="general" priority="2">%1 = Fluctuation amount, %2 = Fluctuation percentage</note>
+          <source>&lt;td&gt;%1 (%2)&lt;/td&gt;</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Fluctuation amount, %2 = Fluctuation percentage with symbol</note>
           <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - NamedType EmailTdFluctuationLbl</note>
         </trans-unit>
         <trans-unit id="Codeunit 3519696695 - NamedType 3050415562" size-unit="char" translate="yes" xml:space="preserve">

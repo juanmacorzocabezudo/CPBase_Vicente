@@ -2,11 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "UAT",
+            "name": "SandboxDev_JMC",
             "request": "launch",
             "type": "al",
             "environmentType": "Sandbox",
-            "environmentName": "Sandboxdev_JMC",
+            "environmentName": "SandboxDev_JMC",
             "tenant": "542e08ca-d023-4f12-ae3d-05a9e8b0dc00",
             "startupObjectType": "Page",
             "startupObjectId": 31,

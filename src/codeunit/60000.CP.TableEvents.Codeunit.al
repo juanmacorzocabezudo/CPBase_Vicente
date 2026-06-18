@@ -134,15 +134,30 @@ codeunit 60000 "Table Events"
     // Calcular Proposed Price = Direct Unit Cost - (Direct Unit Cost * Line Discount % / 100)
     local procedure CalculateAndSetProposedPrice(var PurchLine: Record "Purchase Line")
     var
+        PriceListLine: Record "Price List Line";
         ProposedPrice: Decimal;
     begin
-        // Fórmula exacta igual que CalculateNetUnitPrice en la página de Price List
-        ProposedPrice := PurchLine."Direct Unit Cost";
-        //TODO: JMC Precio propuesto
-        if PurchLine."Line Discount %" <> 0 then
-            ProposedPrice := PurchLine."Direct Unit Cost" - (PurchLine."Direct Unit Cost" * PurchLine."Line Discount %" / 100);
 
-        PurchLine."Proposed Price" := ProposedPrice;
+        clear(PriceListLine);
+        clear(ProposedPrice);
+        PriceListLine.SetRange("Asset Type", PriceListLine."Asset Type"::Item);
+        PriceListLine.SetRange("Asset No.", PurchLine."No.");
+        PriceListLine.SetRange("Price Type", PriceListLine."Price Type"::Purchase);
+        PriceListLine.SetRange("Best Vendor", true);
+        if PriceListLine.FindFirst() then
+            ProposedPrice := PriceListLine."Amount Discount";
+
+
+        if ProposedPrice = 0 then begin
+            //JMC: Así es como estaba antes de mi cambio 10/06/26
+            // Fórmula exacta igual que CalculateNetUnitPrice en la página de Price List
+            ProposedPrice := PurchLine."Direct Unit Cost";
+
+            if PurchLine."Line Discount %" <> 0 then
+                ProposedPrice := PurchLine."Direct Unit Cost" - (PurchLine."Direct Unit Cost" * PurchLine."Line Discount %" / 100);
+        end;
+
+        PurchLine."Proposed Price" := Round(ProposedPrice, 0.001);
     end;
 
     #endregion
