@@ -1088,8 +1088,8 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         EmailBody += '<p><strong>Producto:</strong> ' + ItemNo + ' - ' + Item.Description + '</p>';
         EmailBody += '<br/>';
         EmailBody += '<table width="100%" cellpadding="10"><tr>';
-        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#d9d9d9;padding:10px;">VERSIÓN ANTERIOR (' + Format(PreviousVersion) + ')</h3>' + PreviousTableHtml + '</td>';
-        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#d9d9d9;padding:10px;">VERSIÓN ACTUAL (' + Format(CurrentVersion) + ')</h3>' + CurrentTableHtml + '</td>';
+        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">VERSIÓN ANTERIOR (' + Format(PreviousVersion) + ')</h3>' + PreviousTableHtml + '</td>';
+        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">VERSIÓN ACTUAL (' + Format(CurrentVersion) + ')</h3>' + CurrentTableHtml + '</td>';
         EmailBody += '</tr></table>';
         EmailBody += '</body></html>';
 
