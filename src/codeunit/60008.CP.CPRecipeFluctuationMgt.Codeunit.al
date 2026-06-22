@@ -409,7 +409,8 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         if IncludeCosts and (TriggerCostDetailsHtml <> '') then
             Body += TriggerCostDetailsHtml;
 
-        Body += '<br/>';
+        //JMC - Se omite tabla detallada de fluctuaciones en el email
+        /*Body += '<br/>';
         Body += '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">';
         Body += '<tr style="background-color:#333;color:#fff;">';
         if IncludeCosts then
@@ -433,7 +434,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
                 Body += '</tr>';
             until TempBufferEntries.Next() = 0;
 
-        Body += '</table>';
+        Body += '</table>';*/
 
         CreateAndSendEmail(Recipients, Subject, Body);
     end;
@@ -890,7 +891,10 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
             // Propagar a recetas padre con el mismo flujo iterativo (estabilizar costes y
             // registrar a lo sumo una fluctuación por ancestro). Cubre topologías diamante.
             RecalcAndRecordAncestorFluctuations(ItemNo);
-        end;
+        end
+        else
+            //JMC - Si no hay fluctuación pero el proceso se disparó, se genera entrada para enviar email
+            AddToEmailBuffer(Fluctuation, Item);
 
         SuppressEvents := false;
     end;
@@ -1037,6 +1041,328 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     procedure SetSuppressMessages(NewValue: Boolean)
     begin
         SuppressMessages := NewValue;
+    end;
+
+    //JMC - 2026-06-22
+    procedure CompareAndSendBOMVersionEmail(ItemNo: Code[20]; PreviousVersion: Integer; CurrentVersion: Integer)
+    var
+        Item: Record Item;
+        PreviousHeader: Record 50024;
+        CurrentHeader: Record 50024;
+        HasChanges: Boolean;
+        EmailBody: Text;
+        PreviousTableHtml: Text;
+        CurrentTableHtml: Text;
+        Recipients: Text;
+        Subject: Text;
+        SubjectLbl: Label 'Cambios en versión de receta - %1 (v%2 → v%3)', Comment = '%1=Item No, %2=Previous Version, %3=Current Version';
+    begin
+        // Comparar si hay cambios entre versiones
+        HasChanges := CheckBOMVersionChanges(ItemNo, PreviousVersion, CurrentVersion);
+        if not HasChanges then
+            exit;
+
+        // Obtener headers
+        PreviousHeader.Reset();
+        PreviousHeader.SetRange("Item No.", ItemNo);
+        PreviousHeader.SetRange("BOM Version", PreviousVersion);
+        if not PreviousHeader.FindFirst() then
+            exit;
+
+        CurrentHeader.Reset();
+        CurrentHeader.SetRange("Item No.", ItemNo);
+        CurrentHeader.SetRange("BOM Version", CurrentVersion);
+        if not CurrentHeader.FindFirst() then
+            exit;
+
+        if not Item.Get(ItemNo) then
+            exit;
+
+        // Construir tablas verticales con todos los campos
+        PreviousTableHtml := BuildVersionTable(PreviousHeader, CurrentHeader, true);
+        CurrentTableHtml := BuildVersionTable(CurrentHeader, PreviousHeader, false);
+
+        // Construir email con dos tablas lado a lado
+        EmailBody := '<html><body>';
+        EmailBody += '<h2>Cambios en versión de receta certificada</h2>';
+        EmailBody += '<p><strong>Producto:</strong> ' + ItemNo + ' - ' + Item.Description + '</p>';
+        EmailBody += '<br/>';
+        EmailBody += '<table width="100%" cellpadding="10"><tr>';
+        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#d9d9d9;padding:10px;">VERSIÓN ANTERIOR (' + Format(PreviousVersion) + ')</h3>' + PreviousTableHtml + '</td>';
+        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#d9d9d9;padding:10px;">VERSIÓN ACTUAL (' + Format(CurrentVersion) + ')</h3>' + CurrentTableHtml + '</td>';
+        EmailBody += '</tr></table>';
+        EmailBody += '</body></html>';
+
+        // Enviar email
+        Recipients := GetBOMVersionEmailRecipients();
+        if Recipients = '' then
+            exit;
+
+        Subject := StrSubstNo(SubjectLbl, ItemNo, PreviousVersion, CurrentVersion);
+        SendBOMVersionEmail(Recipients, Subject, EmailBody);
+    end;
+
+    //JMC - 2026-06-22
+    local procedure CheckBOMVersionChanges(ItemNo: Code[20]; PreviousVersion: Integer; CurrentVersion: Integer): Boolean
+    var
+        PreviousHeader: Record 50024;
+        CurrentHeader: Record 50024;
+        PreviousLines: Record 50025;
+        CurrentLines: Record 50025;
+        PreviousCount: Integer;
+        CurrentCount: Integer;
+    begin
+        // Primero comparar los headers (costes, descripciones, etc.)
+        PreviousHeader.Reset();
+        PreviousHeader.SetRange("Item No.", ItemNo);
+        PreviousHeader.SetRange("BOM Version", PreviousVersion);
+        if not PreviousHeader.FindFirst() then
+            exit(true); // No existe la versión anterior, hay cambio
+
+        CurrentHeader.Reset();
+        CurrentHeader.SetRange("Item No.", ItemNo);
+        CurrentHeader.SetRange("BOM Version", CurrentVersion);
+        if not CurrentHeader.FindFirst() then
+            exit(true); // No existe la versión actual, hay cambio
+
+        // Comparar campos clave del header
+        if (PreviousHeader.StandarCost <> CurrentHeader.StandarCost) or
+           (PreviousHeader.UnitCost <> CurrentHeader.UnitCost) or
+           (PreviousHeader.CosteLMFijado <> CurrentHeader.CosteLMFijado) or
+           (PreviousHeader.CostesGenerales <> CurrentHeader.CostesGenerales) or
+           (PreviousHeader.ExWork <> CurrentHeader.ExWork) then
+            exit(true); // Hay cambios en costes
+
+        // Contar líneas en versión anterior
+        PreviousLines.Reset();
+        PreviousLines.SetRange("Parent Item No.", ItemNo);
+        PreviousLines.SetRange("BOM Version", PreviousVersion);
+        PreviousCount := PreviousLines.Count();
+
+        // Contar líneas en versión actual
+        CurrentLines.Reset();
+        CurrentLines.SetRange("Parent Item No.", ItemNo);
+        CurrentLines.SetRange("BOM Version", CurrentVersion);
+        CurrentCount := CurrentLines.Count();
+
+        // Si el número de líneas es diferente, hay cambios
+        if PreviousCount <> CurrentCount then
+            exit(true);
+
+        // Comparar línea por línea
+        if CurrentLines.FindSet() then
+            repeat
+                PreviousLines.Reset();
+                PreviousLines.SetRange("Parent Item No.", ItemNo);
+                PreviousLines.SetRange("BOM Version", PreviousVersion);
+                PreviousLines.SetRange("Line No.", CurrentLines."Line No.");
+                PreviousLines.SetRange(Type, CurrentLines.Type);
+                PreviousLines.SetRange("No.", CurrentLines."No.");
+                PreviousLines.SetRange("Quantity per", CurrentLines."Quantity per");
+                if not PreviousLines.FindFirst() then
+                    exit(true); // Hay diferencias
+            until CurrentLines.Next() = 0;
+
+        exit(false); // No hay cambios
+    end;
+
+    //JMC - 2026-06-22
+    local procedure GetBOMVersionEmailRecipients(): Text
+    var
+        Recipient: Record "Fluctuation Recipient";
+        Recipients: Text;
+    begin
+        // Obtener destinatarios de la tabla Fluctuation Recipient (tipos PT y CA)
+        Recipient.SetFilter("Recipient Type", '%1|%2', "Fluctuation Recipient Type"::PT, "Fluctuation Recipient Type"::CA);
+        if Recipient.FindSet() then
+            repeat
+                if Recipients <> '' then
+                    Recipients += ';';
+                Recipients += Recipient."Email Address";
+            until Recipient.Next() = 0;
+        exit(Recipients);
+    end;
+
+    //JMC - 2026-06-22
+    [TryFunction]
+    local procedure TrySendBOMVersionEmail(Recipients: Text; Subject: Text; Body: Text)
+    var
+        FluctuationSetup: Record "CP Recipe Fluctuation Setup";
+        EmailMessage: Codeunit "Email Message";
+        Email: Codeunit Email;
+        RecipientList: List of [Text];
+    begin
+        FluctuationSetup.GetSetup();
+        if IsNullGuid(FluctuationSetup."Email Account Id") then
+            exit;
+
+        RecipientList := Recipients.Split(';');
+        EmailMessage.Create(RecipientList, Subject, Body, true);
+        Email.Send(EmailMessage, FluctuationSetup."Email Account Id", FluctuationSetup."Email Connector");
+    end;
+
+    //JMC - 2026-06-22
+    local procedure SendBOMVersionEmail(Recipients: Text; Subject: Text; Body: Text)
+    begin
+        if not TrySendBOMVersionEmail(Recipients, Subject, Body) then;
+        // Silenciosamente ignorar errores de email
+    end;
+
+    //JMC - 2026-06-22
+    local procedure BuildVersionTable(CurrentHeader: Record 50024; CompareHeader: Record 50024; IsPreviousVersion: Boolean): Text
+    var
+        TableHtml: Text;
+        FieldRowLbl: Label '<tr%1><td style="font-weight:bold;padding:8px;background-color:#f0f0f0;">%2</td><td style="padding:8px;">%3</td></tr>', Comment = '%1=Style attribute, %2=Field name, %3=Field value';
+        ElaborationText: Text;
+    begin
+        TableHtml := '<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%;">';
+
+        // BOM Version
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."BOM Version", CompareHeader."BOM Version"),
+            'Versión LM',
+            Format(CurrentHeader."BOM Version"));
+
+        // Description
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.Description, CompareHeader.Description),
+            'Descripción',
+            CurrentHeader.Description);
+
+        // Version Date
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Version Date", CompareHeader."Version Date"),
+            'Fecha Versión',
+            Format(CurrentHeader."Version Date"));
+
+        // Comment (assuming it exists)
+        TableHtml += StrSubstNo(FieldRowLbl,
+            '',
+            'Comentario',
+            '');
+
+        // Elaboration
+        ElaborationText := CurrentHeader.GetElaboration();
+        if ElaborationText = '' then
+            ElaborationText := '-';
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(ElaborationText, CompareHeader.GetElaboration()),
+            'Elaboración',
+            ElaborationText);
+
+        // Standard Cost
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.StandarCost, CompareHeader.StandarCost),
+            'Coste Estándar',
+            Format(CurrentHeader.StandarCost, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // Unit Cost
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.UnitCost, CompareHeader.UnitCost),
+            'Coste Unitario',
+            Format(CurrentHeader.UnitCost, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // Coste LM Fijado
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.CosteLMFijado, CompareHeader.CosteLMFijado),
+            'Coste LM Fijado',
+            Format(CurrentHeader.CosteLMFijado, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // Costes Generales
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.CostesGenerales, CompareHeader.CostesGenerales),
+            'Costes Generales',
+            Format(CurrentHeader.CostesGenerales, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // ExWork
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.ExWork, CompareHeader.ExWork),
+            'ExWork',
+            Format(CurrentHeader.ExWork, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // Lote Receta
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Lote Receta", CompareHeader."Lote Receta"),
+            'Lote Receta',
+            Format(CurrentHeader."Lote Receta"));
+
+        // Base Unit of Measure
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Base Unit of Measure", CompareHeader."Base Unit of Measure"),
+            'Unidad Base',
+            CurrentHeader."Base Unit of Measure");
+
+        // Statistics Lot
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Statistics Lot", CompareHeader."Statistics Lot"),
+            'Lote Estadísticas',
+            Format(CurrentHeader."Statistics Lot"));
+
+        // Statistics Unit of Measurement
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Statistics Unit of Measurement", CompareHeader."Statistics Unit of Measurement"),
+            'Unidad Medida Estadísticas',
+            CurrentHeader."Statistics Unit of Measurement");
+
+        TableHtml += '</table>';
+        exit(TableHtml);
+    end;
+
+    //JMC - 2026-06-22
+    local procedure GetFieldChangeStyle(CurrentValue: Variant; CompareValue: Variant): Text
+    var
+        CurrentDec: Decimal;
+        CompareDec: Decimal;
+        CurrentText: Text;
+        CompareText: Text;
+        CurrentInt: Integer;
+        CompareInt: Integer;
+        CurrentDate: Date;
+        CompareDate: Date;
+    begin
+        // Para valores decimales (costes)
+        if CurrentValue.IsDecimal() then begin
+            CurrentDec := CurrentValue;
+            CompareDec := CompareValue;
+            if CurrentDec = CompareDec then
+                exit('');
+            if CurrentDec > CompareDec then
+                exit(' style="background-color:#ffcccc;"')  // Rojo claro para incremento
+            else
+                exit(' style="background-color:#ccffcc;"'); // Verde claro para reducción
+        end;
+
+        // Para valores de texto
+        if CurrentValue.IsText() then begin
+            CurrentText := CurrentValue;
+            CompareText := CompareValue;
+            if CurrentText = CompareText then
+                exit('')
+            else
+                exit(' style="background-color:#fff3cd;"'); // Amarillo claro para cambio
+        end;
+
+        // Para valores enteros
+        if CurrentValue.IsInteger() then begin
+            CurrentInt := CurrentValue;
+            CompareInt := CompareValue;
+            if CurrentInt = CompareInt then
+                exit('')
+            else
+                exit(' style="background-color:#fff3cd;"');
+        end;
+
+        // Para valores de fecha
+        if CurrentValue.IsDate() then begin
+            CurrentDate := CurrentValue;
+            CompareDate := CompareValue;
+            if CurrentDate = CompareDate then
+                exit('')
+            else
+                exit(' style="background-color:#fff3cd;"');
+        end;
+
+        exit('');
     end;
 
     var

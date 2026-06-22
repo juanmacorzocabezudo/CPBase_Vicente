@@ -58,6 +58,8 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
                 trigger OnValidate()
                 begin
                     ValidateBestVendor();
+                    //JMC 18/06/2024 - Se añade llamada a procedimiento para actualizar la información del proveedor en el producto
+                    //ModifyItemVendorInfo();
                 end;
             }
         }
@@ -150,12 +152,19 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
                     // 1. Recopilar productos en estado borrador antes de activar
                     CollectDraftItemNos(DraftItemNos);
 
+                    //JMC 22/06/2026 -  Cogemos el precio del mejor proveedor anterior a la activación
+                    findPreviousBestVendorLine(Rec."Asset No.", PriceListLine);
+                    PreviousPriceGlobal := PriceListLine."Amount Discount";
+
                     // 2. Ejecutar la verificación estándar (activa líneas borrador)
                     PriceListLine.Copy(Rec);
                     PriceListManagement.ActivateDraftLines(PriceListLine);
 
                     // 3. Sincronizar componentes de LM y procesar fluctuaciones
                     SyncBOMComponentsAndProcessRecipes(DraftItemNos);
+
+                    // JMC 18/06/2024 - Se añade llamada a procedimiento para actualizar la información del proveedor en el producto
+                    ModifyItemVendorInfo();
                 end;
             }
         }
@@ -239,6 +248,7 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
     var
         BOMComponent: Record "BOM Component";
         BestVendorLine: Record "Price List Line";
+        PreviousBestVendorLine: Record "Price List Line";
         Item: Record Item;
         RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
         ItemNo: Code[20];
@@ -270,7 +280,8 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
                 if BOMComponent.FindSet() then
                     repeat
                         if (not DetailCaptured) and (not ProcessedItemsForDetails.Contains(ItemNo)) then begin
-                            PreviousPrice := BOMComponent.CosteUnitario;
+                            //JMC 18/06/2024 - Se añade lógica para capturar el nuevo precio desde la línea de mejor proveedor anterior
+                            PreviousPrice := previouspriceGlobal;
                             NewPrice := BestVendorLine."Direct Unit Cost";
                             if PreviousPrice <> NewPrice then
                                 if Item.Get(ItemNo) then
@@ -302,7 +313,8 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
         RecipeFluctuationMgt.SetSuppressMessages(false);
 
         if UpdatedComponents > 0 then
-            Message(VerifySuccessMsg, UpdatedComponents, ProcessedRecipes.Count())
+            //Message(VerifySuccessMsg, UpdatedComponents, ProcessedRecipes.Count())
+            Message(VerifySuccessMsg2, UpdatedComponents)
         else
             Message(VerifyNoRecipesMsg);
     end;
@@ -316,6 +328,18 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
         BestLine.SetRange("Asset No.", ItemNo);
         BestLine.SetRange(Status, BestLine.Status::Active);
         BestLine.SetRange("Best Vendor", true);
+        exit(BestLine.FindFirst());
+    end;
+
+    local procedure FindPreviousBestVendorLine(ItemNo: Code[20]; var BestLine: Record "Price List Line"): Boolean
+    begin
+        BestLine.Reset();
+        BestLine.SetRange("Price Type", BestLine."Price Type"::Purchase);
+        BestLine.SetRange("Source Type", BestLine."Source Type"::Vendor);
+        BestLine.SetRange("Asset Type", BestLine."Asset Type"::Item);
+        BestLine.SetRange("Asset No.", ItemNo);
+        BestLine.SetRange(Status, BestLine.Status::Draft);
+        BestLine.SetRange("Best Vendor", false);
         exit(BestLine.FindFirst());
     end;
 
@@ -348,9 +372,29 @@ pageextension 60007 "Price List Line Review" extends "Price List Line Review"   
         exit(NoSeries);
     end;
 
+    //JMC 18/06/2024 - Procedimiento para actualizar la información del proveedor en el producto
+    procedure ModifyItemVendorInfo()
     var
+        Item: Record Item;
+    begin
+        // Implementación de la lógica para actualizar la información del proveedor en el producto
+        // Esta función se llamará después de validar el mejor proveedor
+        // y actualizará los campos relevantes en la tabla de productos según sea necesario.
+        if Rec."Source Type" = Rec."Source Type"::Vendor then begin
+            clear(Item);
+            Item.setRange("No.", Rec."Asset No.");
+            if Item.findFirst() then begin
+                Item.validate("Vendor No.", Rec."Source No.");
+                Item.Modify(true);
+            end;
+        end;
+    end;
+
+    var
+        PreviousPriceGlobal: Decimal;
         TriggerVerifyLinesLbl: Label 'Verificación de líneas de precios';
         VerifySuccessMsg: Label 'Proceso completado correctamente.\Se han actualizado %1 componentes de LM y recalculado %2 recetas.', Comment = '%1 = Updated components, %2 = Processed recipes';
+        VerifySuccessMsg2: Label 'Proceso completado correctamente.\Se han actualizado %1 componentes de LM.', Comment = '%1 = Updated components';
         VerifyNoItemsMsg: Label 'No se encontraron líneas en estado borrador con productos para procesar.';
         VerifyNoRecipesMsg: Label 'Verificación completada. No se encontraron componentes de LM afectados por los productos modificados.';
         ItemPriceDetailsHdrLbl: Label '<h3>Items with price changes</h3>';

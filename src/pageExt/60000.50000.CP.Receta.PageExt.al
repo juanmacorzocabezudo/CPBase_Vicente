@@ -8,6 +8,15 @@ pageextension 60000 "Receta" extends Receta //50000
         modify(recetaItem) { Visible = false; }
         modify("Statistics Lot") { Visible = false; }
 
+        // Actualizar información de versión cuando cambia el estado
+        modify("Status LM")
+        {
+            trigger OnAfterValidate()
+            begin
+                CurrPage.Update(true);
+            end;
+        }
+
         addafter("Statistics Lot")
         {
             field(StatisticsLotDisplay; Rec."Statistics Lot")
@@ -260,7 +269,8 @@ pageextension 60000 "Receta" extends Receta //50000
         if DetailsHtml <> '' then
             RecipeFluctuationMgt.SetEmailTriggerDetails(DetailsHtml);
         RecipeFluctuationMgt.ProcessAndFixSingleRecipe(ItemNo);
-        RecipeFluctuationMgt.FlushConsolidatedEmail();
+        //JMC - 2026-06-22: Email de fluctuación de costes desactivado (ahora solo se envía al certificar)
+        //RecipeFluctuationMgt.FlushConsolidatedEmail();
     end;
 
     local procedure BuildFluctuatingComponentsHtml(ItemNo: Code[20]): Text
