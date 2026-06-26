@@ -1053,6 +1053,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         EmailBody: Text;
         PreviousTableHtml: Text;
         CurrentTableHtml: Text;
+        ComponentsTableHtml: Text;
         Recipients: Text;
         Subject: Text;
         SubjectLbl: Label 'Cambios en versión de receta - %1 (v%2 → v%3)', Comment = '%1=Item No, %2=Previous Version, %3=Current Version';
@@ -1091,6 +1092,15 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">VERSIÓN ANTERIOR (' + Format(PreviousVersion) + ')</h3>' + PreviousTableHtml + '</td>';
         EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">VERSIÓN ACTUAL (' + Format(CurrentVersion) + ')</h3>' + CurrentTableHtml + '</td>';
         EmailBody += '</tr></table>';
+
+        // Añadir tabla de componentes cambiados
+        ComponentsTableHtml := BuildComponentsComparisonTable(ItemNo, PreviousVersion, CurrentVersion);
+        if ComponentsTableHtml <> '' then begin
+            EmailBody += '<br/><br/>';
+            EmailBody += '<h3 style="background-color:#000000;color:#ffffff;padding:10px;">COMPONENTES CON CAMBIOS</h3>';
+            EmailBody += ComponentsTableHtml;
+        end;
+
         EmailBody += '</body></html>';
 
         // Enviar email
@@ -1363,6 +1373,232 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         end;
 
         exit('');
+    end;
+
+    //JMC - 2026-06-25
+    local procedure BuildComponentsComparisonTable(ItemNo: Code[20]; PreviousVersion: Integer; CurrentVersion: Integer): Text
+    var
+        PreviousLines: Record 50025;
+        CurrentLines: Record 50025;
+        TempChangedLines: Record 50025 temporary;
+        ComponentItem: Record Item;
+        Resource: Record Resource;
+        PreviousHeader: Record 50024;
+        CurrentHeader: Record 50024;
+        TableHtml: Text;
+        HasChanges: Boolean;
+        TypeText: Text;
+        ComponentDesc: Text;
+        UnitCost: Decimal;
+        TotalCost: Decimal;
+        QuantityPerLot: Decimal;
+    begin
+        // Recopilar todos los componentes de la versión actual
+        CurrentLines.Reset();
+        CurrentLines.SetRange("Parent Item No.", ItemNo);
+        CurrentLines.SetRange("BOM Version", CurrentVersion);
+        if CurrentLines.FindSet() then
+            repeat
+                HasChanges := false;
+
+                // Buscar el mismo componente en la versión anterior
+                PreviousLines.Reset();
+                PreviousLines.SetRange("Parent Item No.", ItemNo);
+                PreviousLines.SetRange("BOM Version", PreviousVersion);
+                PreviousLines.SetRange("Line No.", CurrentLines."Line No.");
+
+                if PreviousLines.FindFirst() then begin
+                    // Comparar si hay cambios
+                    if (PreviousLines.Type <> CurrentLines.Type) or
+                       (PreviousLines."No." <> CurrentLines."No.") or
+                       (PreviousLines."Quantity per" <> CurrentLines."Quantity per") or
+                       (PreviousLines."Unit of Measure Code" <> CurrentLines."Unit of Measure Code") then
+                        HasChanges := true;
+                end else
+                    HasChanges := true; // Componente nuevo
+
+                if HasChanges then begin
+                    TempChangedLines.Init();
+                    TempChangedLines.TransferFields(CurrentLines);
+                    TempChangedLines.Insert();
+                end;
+            until CurrentLines.Next() = 0;
+
+        // Buscar componentes eliminados (están en anterior pero no en actual)
+        PreviousLines.Reset();
+        PreviousLines.SetRange("Parent Item No.", ItemNo);
+        PreviousLines.SetRange("BOM Version", PreviousVersion);
+        if PreviousLines.FindSet() then
+            repeat
+                CurrentLines.Reset();
+                CurrentLines.SetRange("Parent Item No.", ItemNo);
+                CurrentLines.SetRange("BOM Version", CurrentVersion);
+                CurrentLines.SetRange("Line No.", PreviousLines."Line No.");
+                if not CurrentLines.FindFirst() then begin
+                    TempChangedLines.Init();
+                    TempChangedLines.TransferFields(PreviousLines);
+                    TempChangedLines."BOM Version" := CurrentVersion; // Marcar para identificar
+                    if TempChangedLines.Insert() then;
+                end;
+            until PreviousLines.Next() = 0;
+
+        // Si no hay cambios, devolver cadena vacía
+        if TempChangedLines.IsEmpty() then
+            exit('');
+
+        // Obtener headers para calcular Cantidad por Lote
+        PreviousHeader.Reset();
+        PreviousHeader.SetRange("Item No.", ItemNo);
+        PreviousHeader.SetRange("BOM Version", PreviousVersion);
+        if not PreviousHeader.FindFirst() then
+            exit('');
+
+        CurrentHeader.Reset();
+        CurrentHeader.SetRange("Item No.", ItemNo);
+        CurrentHeader.SetRange("BOM Version", CurrentVersion);
+        if not CurrentHeader.FindFirst() then
+            exit('');
+
+        // Construir tabla HTML
+        TableHtml := '<table width="100%" cellpadding="10"><tr>';
+        TableHtml += '<td width="50%" valign="top">';
+        TableHtml += '<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%; font-size:11px;">';
+        TableHtml += '<tr style="background-color:#333;color:#fff;"><th>Línea</th><th>Tipo</th><th>Producto</th><th>Descripción</th><th>Cantidad por Lote</th><th>UDM</th><th>Coste Unit.</th><th>Coste Total</th></tr>';
+
+        // Columna ANTERIOR
+        if TempChangedLines.FindSet() then
+            repeat
+                PreviousLines.Reset();
+                PreviousLines.SetRange("Parent Item No.", ItemNo);
+                PreviousLines.SetRange("BOM Version", PreviousVersion);
+                PreviousLines.SetRange("Line No.", TempChangedLines."Line No.");
+
+                if PreviousLines.FindFirst() then begin
+                    case PreviousLines.Type of
+                        PreviousLines.Type::Item:
+                            TypeText := 'Producto';
+                        PreviousLines.Type::Resource:
+                            TypeText := 'Recurso';
+                        else
+                            TypeText := Format(PreviousLines.Type);
+                    end;
+
+                    ComponentDesc := '';
+                    UnitCost := 0;
+                    TotalCost := 0;
+
+                    if PreviousLines.Type = PreviousLines.Type::Item then
+                        if ComponentItem.Get(PreviousLines."No.") then begin
+                            ComponentDesc := ComponentItem.Description;
+                            UnitCost := ComponentItem."Standard Cost";
+                        end;
+
+                    if PreviousLines.Type = PreviousLines.Type::Resource then
+                        if Resource.Get(PreviousLines."No.") then begin
+                            ComponentDesc := Resource.Name;
+                            UnitCost := Resource."Unit Cost";
+                        end;
+
+                    // Calcular Cantidad por Lote = Quantity per * Lote Receta
+                    QuantityPerLot := PreviousLines."Quantity per" * PreviousHeader."Lote Receta";
+                    // Coste Total = Cantidad por Lote * Coste Unitario
+                    TotalCost := QuantityPerLot * UnitCost;
+
+                    TableHtml += '<tr>';
+                    TableHtml += '<td style="padding:4px;">' + Format(PreviousLines."Line No.") + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + TypeText + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + PreviousLines."No." + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + ComponentDesc + '</td>';
+                    TableHtml += '<td style="padding:4px; text-align:right;">' + Format(QuantityPerLot, 0, '<Precision,2:2><Standard Format,0>') + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + PreviousLines."Unit of Measure Code" + '</td>';
+                    TableHtml += '<td style="padding:4px; text-align:right;">' + Format(UnitCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+                    TableHtml += '<td style="padding:4px; text-align:right;">' + Format(TotalCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+                    TableHtml += '</tr>';
+                end else begin
+                    // Componente eliminado
+                    TableHtml += '<tr style="background-color:#ffcccc;">';
+                    TableHtml += '<td style="padding:4px;" colspan="8"><em>Componente eliminado</em></td>';
+                    TableHtml += '</tr>';
+                end;
+            until TempChangedLines.Next() = 0;
+
+        TableHtml += '</table></td>';
+
+        // Columna ACTUAL
+        TableHtml += '<td width="50%" valign="top">';
+        TableHtml += '<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%; font-size:11px;">';
+        TableHtml += '<tr style="background-color:#333;color:#fff;"><th>Línea</th><th>Tipo</th><th>Producto</th><th>Descripción</th><th>Cantidad por Lote</th><th>UDM</th><th>Coste Unit.</th><th>Coste Total</th></tr>';
+
+        if TempChangedLines.FindSet() then
+            repeat
+                CurrentLines.Reset();
+                CurrentLines.SetRange("Parent Item No.", ItemNo);
+                CurrentLines.SetRange("BOM Version", CurrentVersion);
+                CurrentLines.SetRange("Line No.", TempChangedLines."Line No.");
+
+                if CurrentLines.FindFirst() then begin
+                    case CurrentLines.Type of
+                        CurrentLines.Type::Item:
+                            TypeText := 'Producto';
+                        CurrentLines.Type::Resource:
+                            TypeText := 'Recurso';
+                        else
+                            TypeText := Format(CurrentLines.Type);
+                    end;
+
+                    ComponentDesc := '';
+                    UnitCost := 0;
+                    TotalCost := 0;
+
+                    if CurrentLines.Type = CurrentLines.Type::Item then
+                        if ComponentItem.Get(CurrentLines."No.") then begin
+                            ComponentDesc := ComponentItem.Description;
+                            UnitCost := ComponentItem."Standard Cost";
+                        end;
+
+                    if CurrentLines.Type = CurrentLines.Type::Resource then
+                        if Resource.Get(CurrentLines."No.") then begin
+                            ComponentDesc := Resource.Name;
+                            UnitCost := Resource."Unit Cost";
+                        end;
+
+                    // Calcular Cantidad por Lote = Quantity per * Lote Receta
+                    QuantityPerLot := CurrentLines."Quantity per" * CurrentHeader."Lote Receta";
+                    // Coste Total = Cantidad por Lote * Coste Unitario
+                    TotalCost := QuantityPerLot * UnitCost;
+
+                    // Determinar estilo según el cambio
+                    PreviousLines.Reset();
+                    PreviousLines.SetRange("Parent Item No.", ItemNo);
+                    PreviousLines.SetRange("BOM Version", PreviousVersion);
+                    PreviousLines.SetRange("Line No.", CurrentLines."Line No.");
+
+                    if not PreviousLines.FindFirst() then
+                        TableHtml += '<tr style="background-color:#ccffcc;">' // Verde para nuevo
+                    else
+                        TableHtml += '<tr style="background-color:#fff3cd;">'; // Amarillo para modificado
+
+                    TableHtml += '<td style="padding:4px;">' + Format(CurrentLines."Line No.") + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + TypeText + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + CurrentLines."No." + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + ComponentDesc + '</td>';
+                    TableHtml += '<td style="padding:4px; text-align:right;">' + Format(QuantityPerLot, 0, '<Precision,2:2><Standard Format,0>') + '</td>';
+                    TableHtml += '<td style="padding:4px;">' + CurrentLines."Unit of Measure Code" + '</td>';
+                    TableHtml += '<td style="padding:4px; text-align:right;">' + Format(UnitCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+                    TableHtml += '<td style="padding:4px; text-align:right;">' + Format(TotalCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+                    TableHtml += '</tr>';
+                end else begin
+                    // En columna actual pero eliminado (no debería ocurrir)
+                    TableHtml += '<tr>';
+                    TableHtml += '<td style="padding:4px;" colspan="8"><em>-</em></td>';
+                    TableHtml += '</tr>';
+                end;
+            until TempChangedLines.Next() = 0;
+
+        TableHtml += '</table></td>';
+        TableHtml += '</tr></table>';
+
+        exit(TableHtml);
     end;
 
     var
