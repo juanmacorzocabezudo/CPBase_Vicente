@@ -242,7 +242,7 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
                             NewPrice := BestVendorLine."Direct Unit Cost";
                             if PreviousPrice <> NewPrice then
                                 if Item.Get(ItemNo) then
-                                    ItemDetailRows += StrSubstNo(RowTdLbl, ItemNo, Item.Description, GetItemTypeLabel(Item."No. Series"), Format(PreviousPrice), Format(NewPrice));
+                                    ItemDetailRows += StrSubstNo(RowTdLbl, ItemNo, Item.Description, Item.MarcaProveedor, GetItemTypeLabel(Item."No. Series"), Format(PreviousPrice), Format(NewPrice));
                             ProcessedItemsForDetails.Add(ItemNo);
                             DetailCaptured := true;
                         end;
@@ -321,9 +321,9 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
         VerifySuccessMsg: Label 'Proceso completado correctamente.\Se han actualizado %1 componentes de LM y recalculado %2 recetas.', Comment = '%1 = Updated components, %2 = Processed recipes';
         VerifyNoItemsMsg: Label 'No se encontraron líneas en estado borrador con productos para procesar.';
         VerifyNoRecipesMsg: Label 'Verificación completada. No se encontraron componentes de LM afectados por los productos modificados.';
-        ItemPriceDetailsHdrLbl: Label '<h3>Items with price changes</h3>';
+        ItemPriceDetailsHdrLbl: Label '<h3>Productos con cambio de precio</h3>';
         TableOpenLbl: Label '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">', Locked = true;
-        TableHdrLbl: Label '<tr style="background-color:#333;color:#fff;"><th>Code</th><th>Description</th><th>Type</th><th>Previous Price</th><th>New Price</th></tr>', Comment = '#333 and #fff are HTML hex color codes, not placeholders.';
+        TableHdrLbl: Label '<tr style="background-color:#333;color:#fff;"><th>Código</th><th>Descripción</th><th>Marca</th><th>Tipo</th><th>Precio Anterior</th><th>Precio Nuevo</th></tr>', Comment = '#333 and #fff are HTML hex color codes, not placeholders.';
         TableCloseLbl: Label '</table>', Locked = true;
-        RowTdLbl: Label '<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>', Locked = true;
+        RowTdLbl: Label '<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>%6</td></tr>', Locked = true;
 }

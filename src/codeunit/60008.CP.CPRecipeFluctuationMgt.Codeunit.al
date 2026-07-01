@@ -1047,29 +1047,26 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     procedure CompareAndSendBOMVersionEmail(ItemNo: Code[20]; PreviousVersion: Integer; CurrentVersion: Integer)
     var
         Item: Record Item;
-        PreviousHeader: Record 50024;
+        FixedFluctuation: Record "CP Recipe Price Fluctuation";
         CurrentHeader: Record 50024;
+        CurrentBOMLines: Record 50025;
         HasChanges: Boolean;
         EmailBody: Text;
-        PreviousTableHtml: Text;
+        FixedTableHtml: Text;
         CurrentTableHtml: Text;
         ComponentsTableHtml: Text;
         Recipients: Text;
         Subject: Text;
-        SubjectLbl: Label 'Cambios en versión de receta - %1 (v%2 → v%3)', Comment = '%1=Item No, %2=Previous Version, %3=Current Version';
+        SubjectLbl: Label 'Cambios en versión de receta - %1 (Receta fijada → v%2)', Comment = '%1=Item No, %2=Current Version';
     begin
-        // Comparar si hay cambios entre versiones
-        HasChanges := CheckBOMVersionChanges(ItemNo, PreviousVersion, CurrentVersion);
-        if not HasChanges then
-            exit;
+        // Obtener la entrada de fluctuación marcada como "Recipe Fixed"
+        FixedFluctuation.Reset();
+        FixedFluctuation.SetRange("Item No.", ItemNo);
+        FixedFluctuation.SetRange("Recipe Fixed", true);
+        if not FixedFluctuation.FindFirst() then
+            exit; // No hay receta fijada para comparar
 
-        // Obtener headers
-        PreviousHeader.Reset();
-        PreviousHeader.SetRange("Item No.", ItemNo);
-        PreviousHeader.SetRange("BOM Version", PreviousVersion);
-        if not PreviousHeader.FindFirst() then
-            exit;
-
+        // Obtener la versión actual archivada
         CurrentHeader.Reset();
         CurrentHeader.SetRange("Item No.", ItemNo);
         CurrentHeader.SetRange("BOM Version", CurrentVersion);
@@ -1079,9 +1076,14 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         if not Item.Get(ItemNo) then
             exit;
 
-        // Construir tablas verticales con todos los campos
-        PreviousTableHtml := BuildVersionTable(PreviousHeader, CurrentHeader, true);
-        CurrentTableHtml := BuildVersionTable(CurrentHeader, PreviousHeader, false);
+        // Verificar si hay cambios entre la receta fijada y la versión actual
+        HasChanges := CheckFluctuationVsCurrentVersion(FixedFluctuation, CurrentHeader);
+        if not HasChanges then
+            exit;
+
+        // Construir tablas verticales comparando receta fijada vs versión actual
+        FixedTableHtml := BuildFixedFluctuationTable(FixedFluctuation, CurrentHeader);
+        CurrentTableHtml := BuildCurrentVersionTable(CurrentHeader, FixedFluctuation);
 
         // Construir email con dos tablas lado a lado
         EmailBody := '<html><body>';
@@ -1089,12 +1091,12 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         EmailBody += '<p><strong>Producto:</strong> ' + ItemNo + ' - ' + Item.Description + '</p>';
         EmailBody += '<br/>';
         EmailBody += '<table width="100%" cellpadding="10"><tr>';
-        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">VERSIÓN ANTERIOR (' + Format(PreviousVersion) + ')</h3>' + PreviousTableHtml + '</td>';
+        EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">RECETA FIJADA</h3>' + FixedTableHtml + '</td>';
         EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">VERSIÓN ACTUAL (' + Format(CurrentVersion) + ')</h3>' + CurrentTableHtml + '</td>';
         EmailBody += '</tr></table>';
 
-        // Añadir tabla de componentes cambiados
-        ComponentsTableHtml := BuildComponentsComparisonTable(ItemNo, PreviousVersion, CurrentVersion);
+        // Añadir tabla de componentes comparando versión anterior vs actual (solo cambios)
+        ComponentsTableHtml := BuildComponentsComparisonTables(ItemNo, PreviousVersion, CurrentVersion);
         if ComponentsTableHtml <> '' then begin
             EmailBody += '<br/><br/>';
             EmailBody += '<h3 style="background-color:#000000;color:#ffffff;padding:10px;">COMPONENTES CON CAMBIOS</h3>';
@@ -1108,8 +1110,358 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         if Recipients = '' then
             exit;
 
-        Subject := StrSubstNo(SubjectLbl, ItemNo, PreviousVersion, CurrentVersion);
+        Subject := StrSubstNo(SubjectLbl, ItemNo, CurrentVersion);
         SendBOMVersionEmail(Recipients, Subject, EmailBody);
+    end;
+
+    //JMC - 2026-07-01
+    local procedure CheckFluctuationVsCurrentVersion(var FixedFluctuation: Record "CP Recipe Price Fluctuation"; var CurrentHeader: Record 50024): Boolean
+    begin
+        // Comparar los costes de la receta fijada con la versión actual
+        if (FixedFluctuation."Fixed BOM Total Cost" <> CurrentHeader.CosteLMFijado) or
+           (FixedFluctuation."Fixed General Costs" <> CurrentHeader.CostesGenerales) or
+           (FixedFluctuation."Fixed EXWORK Standard" <> CurrentHeader.ExWork) then
+            exit(true);
+
+        // Si ningún campo cambió, no hay diferencias
+        exit(false);
+    end;
+
+    //JMC - 2026-07-01
+    local procedure BuildFixedFluctuationTable(var FixedFluctuation: Record "CP Recipe Price Fluctuation"; var CompareHeader: Record 50024): Text
+    var
+        TableHtml: Text;
+        FieldRowLbl: Label '<tr%1><td style="font-weight:bold;padding:8px;background-color:#f0f0f0;">%2</td><td style="padding:8px;">%3</td></tr>', Comment = '%1=Style attribute, %2=Field name, %3=Field value';
+    begin
+        TableHtml := '<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%;">';
+
+        // Fecha de fijación
+        TableHtml += StrSubstNo(FieldRowLbl,
+            '',
+            'Fecha Fijación',
+            Format(FixedFluctuation."Fixed Date", 0, '<Day,2>/<Month,2>/<Year4> <Hours24,2>:<Minutes,2>'));
+
+        // Fijado por
+        TableHtml += StrSubstNo(FieldRowLbl,
+            '',
+            'Fijado por',
+            FixedFluctuation."Fixed By");
+
+        // Lote Receta
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(FixedFluctuation."Recipe Lot", CompareHeader."Lote Receta"),
+            'Lote Receta',
+            Format(FixedFluctuation."Recipe Lot"));
+
+        // Unidad Base
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(FixedFluctuation."Unit of Measure", CompareHeader."Base Unit of Measure"),
+            'Unidad Base',
+            FixedFluctuation."Unit of Measure");
+
+        // Coste LM Fijado
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(FixedFluctuation."Fixed BOM Total Cost", CompareHeader.CosteLMFijado),
+            'Coste LM Fijado',
+            Format(FixedFluctuation."Fixed BOM Total Cost", 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // Costes Generales
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(FixedFluctuation."Fixed General Costs", CompareHeader.CostesGenerales),
+            'Costes Generales',
+            Format(FixedFluctuation."Fixed General Costs", 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // ExWork
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(FixedFluctuation."Fixed EXWORK Standard", CompareHeader.ExWork),
+            'ExWork',
+            Format(FixedFluctuation."Fixed EXWORK Standard", 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        TableHtml += '</table>';
+        exit(TableHtml);
+    end;
+
+    //JMC - 2026-07-01
+    local procedure BuildCurrentVersionTable(var CurrentHeader: Record 50024; var FixedFluctuation: Record "CP Recipe Price Fluctuation"): Text
+    var
+        TableHtml: Text;
+        FieldRowLbl: Label '<tr%1><td style="font-weight:bold;padding:8px;background-color:#f0f0f0;">%2</td><td style="padding:8px;">%3</td></tr>', Comment = '%1=Style attribute, %2=Field name, %3=Field value';
+    begin
+        TableHtml := '<table border="1" cellpadding="0" cellspacing="0" style="border-collapse:collapse; width:100%;">';
+
+        // Versión
+        TableHtml += StrSubstNo(FieldRowLbl,
+            '',
+            'Versión LM',
+            Format(CurrentHeader."BOM Version"));
+
+        // Fecha Versión
+        TableHtml += StrSubstNo(FieldRowLbl,
+            '',
+            'Fecha Versión',
+            Format(CurrentHeader."Version Date"));
+
+        // Lote Receta
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Lote Receta", FixedFluctuation."Recipe Lot"),
+            'Lote Receta',
+            Format(CurrentHeader."Lote Receta"));
+
+        // Unidad Base
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader."Base Unit of Measure", FixedFluctuation."Unit of Measure"),
+            'Unidad Base',
+            CurrentHeader."Base Unit of Measure");
+
+        // Coste LM Fijado
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.CosteLMFijado, FixedFluctuation."Fixed BOM Total Cost"),
+            'Coste LM Fijado',
+            Format(CurrentHeader.CosteLMFijado, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // Costes Generales
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.CostesGenerales, FixedFluctuation."Fixed General Costs"),
+            'Costes Generales',
+            Format(CurrentHeader.CostesGenerales, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        // ExWork
+        TableHtml += StrSubstNo(FieldRowLbl,
+            GetFieldChangeStyle(CurrentHeader.ExWork, FixedFluctuation."Fixed EXWORK Standard"),
+            'ExWork',
+            Format(CurrentHeader.ExWork, 0, '<Precision,2:2><Standard Format,0>') + ' €');
+
+        TableHtml += '</table>';
+        exit(TableHtml);
+    end;
+
+    //JMC - 2026-07-01
+    local procedure BuildComponentsComparisonTables(ItemNo: Code[20]; PreviousVersion: Integer; CurrentVersion: Integer): Text
+    var
+        PreviousLines: Record 50025;
+        CurrentLines: Record 50025;
+        PreviousHeader: Record 50024;
+        CurrentHeader: Record 50024;
+        TempChangedLinesPrev: Record 50025 temporary;
+        TempChangedLinesCurr: Record 50025 temporary;
+        ComponentItem: Record Item;
+        TableHtml: Text;
+        PreviousTableHtml: Text;
+        CurrentTableHtml: Text;
+        RowHtml: Text;
+        HasChanges: Boolean;
+        PrevQuantityPerLot: Decimal;
+        CurrQuantityPerLot: Decimal;
+        PrevTotalCost: Decimal;
+        CurrTotalCost: Decimal;
+    begin
+        // Obtener headers
+        PreviousHeader.Reset();
+        PreviousHeader.SetRange("Item No.", ItemNo);
+        PreviousHeader.SetRange("BOM Version", PreviousVersion);
+        if not PreviousHeader.FindFirst() then
+            exit('');
+
+        CurrentHeader.Reset();
+        CurrentHeader.SetRange("Item No.", ItemNo);
+        CurrentHeader.SetRange("BOM Version", CurrentVersion);
+        if not CurrentHeader.FindFirst() then
+            exit('');
+
+        // Recopilar componentes que han cambiado
+        CurrentLines.Reset();
+        CurrentLines.SetRange("Parent Item No.", ItemNo);
+        CurrentLines.SetRange("BOM Version", CurrentVersion);
+        CurrentLines.SetRange(Type, CurrentLines.Type::Item);
+        CurrentLines.SetRange(Maquila, false);
+
+        if CurrentLines.FindSet() then
+            repeat
+                HasChanges := false;
+                PreviousLines.Reset();
+                PreviousLines.SetRange("Parent Item No.", ItemNo);
+                PreviousLines.SetRange("BOM Version", PreviousVersion);
+                PreviousLines.SetRange("Line No.", CurrentLines."Line No.");
+                PreviousLines.SetRange(Type, PreviousLines.Type::Item);
+
+                if PreviousLines.FindFirst() then begin
+                    // Comparar si hay cambios
+                    if (PreviousLines."No." <> CurrentLines."No.") or
+                       (PreviousLines."Quantity per" <> CurrentLines."Quantity per") or
+                       (PreviousLines."Variant Code" <> CurrentLines."Variant Code") or
+                       (PreviousLines.CosteUnitario <> CurrentLines.CosteUnitario) then
+                        HasChanges := true;
+                end else
+                    HasChanges := true; // Componente nuevo
+
+                if HasChanges then begin
+                    // Guardar línea anterior si existe
+                    if PreviousLines."Line No." <> 0 then begin
+                        TempChangedLinesPrev.Init();
+                        TempChangedLinesPrev.TransferFields(PreviousLines);
+                        if not TempChangedLinesPrev.Insert() then;
+                    end;
+
+                    // Guardar línea actual
+                    TempChangedLinesCurr.Init();
+                    TempChangedLinesCurr.TransferFields(CurrentLines);
+                    if not TempChangedLinesCurr.Insert() then;
+                end;
+            until CurrentLines.Next() = 0;
+
+        // Buscar componentes eliminados
+        PreviousLines.Reset();
+        PreviousLines.SetRange("Parent Item No.", ItemNo);
+        PreviousLines.SetRange("BOM Version", PreviousVersion);
+        PreviousLines.SetRange(Type, PreviousLines.Type::Item);
+        PreviousLines.SetRange(Maquila, false);
+
+        if PreviousLines.FindSet() then
+            repeat
+                CurrentLines.Reset();
+                CurrentLines.SetRange("Parent Item No.", ItemNo);
+                CurrentLines.SetRange("BOM Version", CurrentVersion);
+                CurrentLines.SetRange("Line No.", PreviousLines."Line No.");
+
+                if not CurrentLines.FindFirst() then begin
+                    // Componente eliminado
+                    TempChangedLinesPrev.Init();
+                    TempChangedLinesPrev.TransferFields(PreviousLines);
+                    if not TempChangedLinesPrev.Insert() then;
+                end;
+            until PreviousLines.Next() = 0;
+
+        // Si no hay cambios, devolver cadena vacía
+        if TempChangedLinesPrev.IsEmpty() and TempChangedLinesCurr.IsEmpty() then
+            exit('');
+
+        // Construir tabla de VERSIÓN ANTERIOR
+        PreviousTableHtml := '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">';
+        PreviousTableHtml += '<tr style="background-color:#666;color:#fff;">';
+        PreviousTableHtml += '<th>Nº</th><th>Descripción</th><th>Marca</th><th>Cantidad por Lote</th><th>Cód. unidad medida</th><th>Coste Estándar Marcado</th><th>Coste Total</th>';
+        PreviousTableHtml += '</tr>';
+
+        if TempChangedLinesPrev.FindSet() then
+            repeat
+                PrevQuantityPerLot := TempChangedLinesPrev."Quantity per" * PreviousHeader."Lote Receta";
+                PrevTotalCost := PrevQuantityPerLot * TempChangedLinesPrev.CosteUnitario;
+
+                PreviousTableHtml += '<tr>';
+                PreviousTableHtml += '<td style="padding:4px;">' + TempChangedLinesPrev."No." + '</td>';
+                PreviousTableHtml += '<td style="padding:4px;">' + TempChangedLinesPrev.Description + '</td>';
+                PreviousTableHtml += '<td style="padding:4px;">' + TempChangedLinesPrev."Variant Code" + '</td>';
+                PreviousTableHtml += '<td style="padding:4px; text-align:right;">' + Format(PrevQuantityPerLot, 0, '<Precision,2:2><Standard Format,0>') + '</td>';
+                PreviousTableHtml += '<td style="padding:4px;">' + TempChangedLinesPrev."Unit of Measure Code" + '</td>';
+                PreviousTableHtml += '<td style="padding:4px; text-align:right;">' + Format(TempChangedLinesPrev.CosteUnitario, 0, '<Precision,4:4><Standard Format,0>') + ' €</td>';
+                PreviousTableHtml += '<td style="padding:4px; text-align:right;">' + Format(PrevTotalCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+                PreviousTableHtml += '</tr>';
+            until TempChangedLinesPrev.Next() = 0
+        else begin
+            PreviousTableHtml += '<tr><td colspan="7" style="padding:8px; text-align:center; font-style:italic;">Sin componentes previos</td></tr>';
+        end;
+
+        PreviousTableHtml += '</table>';
+
+        // Construir tabla de VERSIÓN ACTUAL
+        CurrentTableHtml := '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">';
+        CurrentTableHtml += '<tr style="background-color:#666;color:#fff;">';
+        CurrentTableHtml += '<th>Nº</th><th>Descripción</th><th>Marca</th><th>Cantidad por Lote</th><th>Cód. unidad medida</th><th>Coste Estándar Marcado</th><th>Coste Total</th>';
+        CurrentTableHtml += '</tr>';
+
+        if TempChangedLinesCurr.FindSet() then
+            repeat
+                CurrQuantityPerLot := TempChangedLinesCurr."Quantity per" * CurrentHeader."Lote Receta";
+                CurrTotalCost := CurrQuantityPerLot * TempChangedLinesCurr.CosteUnitario;
+
+                CurrentTableHtml += '<tr>';
+                CurrentTableHtml += '<td style="padding:4px;">' + TempChangedLinesCurr."No." + '</td>';
+                CurrentTableHtml += '<td style="padding:4px;">' + TempChangedLinesCurr.Description + '</td>';
+                CurrentTableHtml += '<td style="padding:4px;">' + TempChangedLinesCurr."Variant Code" + '</td>';
+                CurrentTableHtml += '<td style="padding:4px; text-align:right;">' + Format(CurrQuantityPerLot, 0, '<Precision,2:2><Standard Format,0>') + '</td>';
+                CurrentTableHtml += '<td style="padding:4px;">' + TempChangedLinesCurr."Unit of Measure Code" + '</td>';
+                CurrentTableHtml += '<td style="padding:4px; text-align:right;">' + Format(TempChangedLinesCurr.CosteUnitario, 0, '<Precision,4:4><Standard Format,0>') + ' €</td>';
+                CurrentTableHtml += '<td style="padding:4px; text-align:right;">' + Format(CurrTotalCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+                CurrentTableHtml += '</tr>';
+            until TempChangedLinesCurr.Next() = 0
+        else begin
+            CurrentTableHtml += '<tr><td colspan="7" style="padding:8px; text-align:center; font-style:italic;">Sin componentes actuales</td></tr>';
+        end;
+
+        CurrentTableHtml += '</table>';
+
+        // Construir layout con dos tablas: una encima de otra para mejor visualización
+        TableHtml := '<table width="100%" cellpadding="0" cellspacing="0">';
+        TableHtml += '<tr><td style="padding-bottom:20px;">';
+        TableHtml += '<h4 style="background-color:#666;color:#ffffff;padding:8px;margin:0;">VERSIÓN ANTERIOR (v' + Format(PreviousVersion) + ')</h4>';
+        TableHtml += PreviousTableHtml;
+        TableHtml += '</td></tr>';
+        TableHtml += '<tr><td>';
+        TableHtml += '<h4 style="background-color:#666;color:#ffffff;padding:8px;margin:0;">VERSIÓN ACTUAL (v' + Format(CurrentVersion) + ')</h4>';
+        TableHtml += CurrentTableHtml;
+        TableHtml += '</td></tr>';
+        TableHtml += '</table>';
+
+        exit(TableHtml);
+    end;
+
+    //JMC - 2026-07-01
+    local procedure BuildCurrentVersionComponentsTable(ItemNo: Code[20]; CurrentVersion: Integer): Text
+    var
+        CurrentLines: Record 50025;
+        CurrentHeader: Record 50024;
+        ComponentItem: Record Item;
+        TableHtml: Text;
+        RowHtml: Text;
+        QuantityPerLot: Decimal;
+        TotalCost: Decimal;
+    begin
+        // Obtener header para calcular Cantidad por Lote
+        CurrentHeader.Reset();
+        CurrentHeader.SetRange("Item No.", ItemNo);
+        CurrentHeader.SetRange("BOM Version", CurrentVersion);
+        if not CurrentHeader.FindFirst() then
+            exit('');
+
+        // Obtener componentes de la versión actual
+        CurrentLines.Reset();
+        CurrentLines.SetRange("Parent Item No.", ItemNo);
+        CurrentLines.SetRange("BOM Version", CurrentVersion);
+        CurrentLines.SetRange(Type, CurrentLines.Type::Item);
+        CurrentLines.SetRange(Maquila, false);
+
+        if not CurrentLines.FindSet() then
+            exit('');
+
+        // Construir tabla HTML
+        TableHtml := '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse; width:100%;">';
+        TableHtml += '<tr style="background-color:#333;color:#fff;">';
+        TableHtml += '<th>Nº</th><th>Descripción</th><th>Marca</th><th>Cantidad por Lote</th><th>Cód. unidad medida</th><th>Coste Estándar Marcado</th><th>Coste Total</th>';
+        TableHtml += '</tr>';
+
+        repeat
+            // Calcular Cantidad por Lote = Quantity per * Lote Receta
+            QuantityPerLot := CurrentLines."Quantity per" * CurrentHeader."Lote Receta";
+
+            // Obtener el Coste Estándar Marcado (CosteUnitario del componente)
+            if ComponentItem.Get(CurrentLines."No.") then
+                TotalCost := QuantityPerLot * CurrentLines.CosteUnitario
+            else
+                TotalCost := 0;
+
+            RowHtml += '<tr>';
+            RowHtml += '<td style="padding:4px;">' + CurrentLines."No." + '</td>';
+            RowHtml += '<td style="padding:4px;">' + CurrentLines.Description + '</td>';
+            RowHtml += '<td style="padding:4px;">' + CurrentLines."Variant Code" + '</td>';
+            RowHtml += '<td style="padding:4px; text-align:right;">' + Format(QuantityPerLot, 0, '<Precision,2:2><Standard Format,0>') + '</td>';
+            RowHtml += '<td style="padding:4px;">' + CurrentLines."Unit of Measure Code" + '</td>';
+            RowHtml += '<td style="padding:4px; text-align:right;">' + Format(CurrentLines.CosteUnitario, 0, '<Precision,4:4><Standard Format,0>') + ' €</td>';
+            RowHtml += '<td style="padding:4px; text-align:right;">' + Format(TotalCost, 0, '<Precision,2:2><Standard Format,0>') + ' €</td>';
+            RowHtml += '</tr>';
+        until CurrentLines.Next() = 0;
+
+        TableHtml += RowHtml;
+        TableHtml += '</table>';
+        exit(TableHtml);
     end;
 
     //JMC - 2026-06-22
