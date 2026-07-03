@@ -286,6 +286,8 @@ codeunit 60000 "Table Events"
     //JMC - 2026-06-22
     [EventSubscriber(ObjectType::Table, Database::Item, 'OnAfterModifyEvent', '', false, false)]
     local procedure OnItemStatusChanged(var Rec: Record Item; var xRec: Record Item; RunTrigger: Boolean)
+    var
+        RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
     begin
         // Detectar cuando el estado cambia a "Certificated"
         if Rec.IsTemporary() then
@@ -294,8 +296,12 @@ codeunit 60000 "Table Events"
         if not RunTrigger then
             exit;
 
-        // Si el estado cambió y el nuevo estado es "Certificated"
-        if (Rec."Status LM" = Rec."Status LM"::Certificated) then
+        // Respetar el flag SuppressEvents para evitar cascadas durante ProcessParentRecipes
+        if RecipeFluctuationMgt.IsSuppressEvents() then
+            exit;
+
+        // Solo archivar si el estado CAMBIÓ a "Certificated" (no en cada modificación de items certificados)
+        if (xRec."Status LM" <> Rec."Status LM") and (Rec."Status LM" = Rec."Status LM"::Certificated) then
             ArchiveBOMVersion(Rec);
     end;
 

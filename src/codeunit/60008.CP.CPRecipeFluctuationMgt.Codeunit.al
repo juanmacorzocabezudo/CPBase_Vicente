@@ -409,8 +409,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         if IncludeCosts and (TriggerCostDetailsHtml <> '') then
             Body += TriggerCostDetailsHtml;
 
-        //JMC - Se omite tabla detallada de fluctuaciones en el email
-        /*Body += '<br/>';
+        Body += '<br/>';
         Body += '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">';
         Body += '<tr style="background-color:#333;color:#fff;">';
         if IncludeCosts then
@@ -434,7 +433,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
                 Body += '</tr>';
             until TempBufferEntries.Next() = 0;
 
-        Body += '</table>';*/
+        Body += '</table>';
 
         CreateAndSendEmail(Recipients, Subject, Body);
     end;
@@ -1041,6 +1040,11 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     procedure SetSuppressMessages(NewValue: Boolean)
     begin
         SuppressMessages := NewValue;
+    end;
+
+    procedure IsSuppressEvents(): Boolean
+    begin
+        exit(SuppressEvents);
     end;
 
     //JMC - 2026-06-22
