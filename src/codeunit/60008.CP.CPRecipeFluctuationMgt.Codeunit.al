@@ -428,7 +428,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
                 if IncludeCosts then begin
                     Body += StrSubstNo(EmailTdLbl, Format(TempBufferEntries."Previous Standard Cost"));
                     Body += StrSubstNo(EmailTdLbl, Format(TempBufferEntries."Current Standard Cost"));
-                    Body += StrSubstNo(EmailTdFluctuationLbl, Format(TempBufferEntries."Fluctuation Amount"), Format(TempBufferEntries."Fluctuation %") + '%');
+                    Body += '<td>' + Format(TempBufferEntries."Fluctuation Amount") + ' (' + Format(TempBufferEntries."Fluctuation %", 0, '<Precision,2:2><Standard Format,9>') + ' %)</td>';
                 end;
                 Body += '</tr>';
             until TempBufferEntries.Next() = 0;
@@ -484,18 +484,13 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     [TryFunction]
     local procedure TrySendEmail(Recipients: Text; Subject: Text; Body: Text)
     var
-        FluctuationSetup: Record "CP Recipe Fluctuation Setup";
         EmailMessage: Codeunit "Email Message";
         Email: Codeunit Email;
         RecipientList: List of [Text];
     begin
-        FluctuationSetup.GetSetup();
-        if IsNullGuid(FluctuationSetup."Email Account Id") then
-            Error(NoEmailAccountConfiguredErr);
-
         RecipientList := Recipients.Split(';');
         EmailMessage.Create(RecipientList, Subject, Body, true);
-        Email.Send(EmailMessage, FluctuationSetup."Email Account Id", FluctuationSetup."Email Connector");
+        Email.Send(EmailMessage);
     end;
 
     local procedure CreateAndSendEmail(Recipients: Text; Subject: Text; Body: Text)
@@ -920,11 +915,6 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
 
     [EventSubscriber(ObjectType::Table, Database::"BOM Component", 'OnAfterModifyEvent', '', false, false)]
     local procedure OnBOMComponentSubstitution(var Rec: Record "BOM Component"; var xRec: Record "BOM Component"; RunTrigger: Boolean)
-    var
-        OldItem: Record Item;
-        NewItem: Record Item;
-        OldDesc: Text;
-        NewDesc: Text;
     begin
         if SuppressEvents then
             exit;
@@ -934,19 +924,15 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         if Rec.Type <> Rec.Type::Item then
             exit;
 
-        if OldItem.Get(xRec."No.") then
-            OldDesc := OldItem.Description;
-        if NewItem.Get(Rec."No.") then
-            NewDesc := NewItem.Description;
-
         SuppressEvents := true;
         SuppressMessages := true;
-        ClearEmailBuffer();
-        SetEmailTriggerSource(StrSubstNo(TriggerSubstitutionLbl, xRec."No.", OldDesc, Rec."No.", NewDesc, Rec."Parent Item No."));
 
+        // Recalcular coste de la receta padre sin enviar email de fluctuación
+        // (el email de cambios de versión ya se enviará cuando se certifique la receta)
         ProcessAndFixSingleRecipe(Rec."Parent Item No.");
 
-        FlushConsolidatedEmail();
+        // NO enviar email de fluctuación aquí - solo cuando se cambia desde AlxModCosteEstandar
+        ClearEmailBuffer();
         SuppressEvents := false;
         SuppressMessages := false;
     end;
@@ -1289,11 +1275,10 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
                 PreviousLines.SetRange(Type, PreviousLines.Type::Item);
 
                 if PreviousLines.FindFirst() then begin
-                    // Comparar si hay cambios
+                    // Comparar si hay cambios estructurales (ignorar cambios solo de coste)
                     if (PreviousLines."No." <> CurrentLines."No.") or
                        (PreviousLines."Quantity per" <> CurrentLines."Quantity per") or
-                       (PreviousLines."Variant Code" <> CurrentLines."Variant Code") or
-                       (PreviousLines.CosteUnitario <> CurrentLines.CosteUnitario) then
+                       (PreviousLines."Variant Code" <> CurrentLines."Variant Code") then
                         HasChanges := true;
                 end else
                     HasChanges := true; // Componente nuevo
@@ -1553,21 +1538,15 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     [TryFunction]
     local procedure TrySendBOMVersionEmail(Recipients: Text; Subject: Text; Body: Text)
     var
-        FluctuationSetup: Record "CP Recipe Fluctuation Setup";
         EmailMessage: Codeunit "Email Message";
         Email: Codeunit Email;
         RecipientList: List of [Text];
     begin
-        FluctuationSetup.GetSetup();
-        if IsNullGuid(FluctuationSetup."Email Account Id") then
-            exit;
-
         RecipientList := Recipients.Split(';');
         EmailMessage.Create(RecipientList, Subject, Body, true);
-        Email.Send(EmailMessage, FluctuationSetup."Email Account Id", FluctuationSetup."Email Connector");
+        Email.Send(EmailMessage);
     end;
 
-    //JMC - 2026-06-22
     local procedure SendBOMVersionEmail(Recipients: Text; Subject: Text; Body: Text)
     begin
         if not TrySendBOMVersionEmail(Recipients, Subject, Body) then;

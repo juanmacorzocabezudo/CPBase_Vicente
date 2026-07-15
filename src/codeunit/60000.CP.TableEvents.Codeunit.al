@@ -289,7 +289,15 @@ codeunit 60000 "Table Events"
     var
         RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
     begin
-        // Detectar cuando el estado cambia a "Certificated"
+        // OPTIMIZACIÓN: Verificar primero si el status cambió (condición más frecuentemente falsa)
+        // Esto evita ejecutar el resto del código en el 99.9% de las modificaciones de Item
+        if xRec."Status LM" = Rec."Status LM" then
+            exit;
+
+        // Solo procesar si cambió específicamente a "Certificated"
+        if Rec."Status LM" <> Rec."Status LM"::Certificated then
+            exit;
+
         if Rec.IsTemporary() then
             exit;
 
@@ -300,9 +308,7 @@ codeunit 60000 "Table Events"
         if RecipeFluctuationMgt.IsSuppressEvents() then
             exit;
 
-        // Solo archivar si el estado CAMBIÓ a "Certificated" (no en cada modificación de items certificados)
-        if (xRec."Status LM" <> Rec."Status LM") and (Rec."Status LM" = Rec."Status LM"::Certificated) then
-            ArchiveBOMVersion(Rec);
+        ArchiveBOMVersion(Rec);
     end;
 
     //JMC - 2026-06-22
@@ -316,6 +322,7 @@ codeunit 60000 "Table Events"
         BOMAditionalCost: Record 50029;
         BOMAditionalCostVersion: Record 50029;
         RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
+        ItemRefreshed: Record Item;
         VersionNum: Integer;
         PreviousVersionNum: Integer;
         VersionArchivedMsg: Label 'Recipe version %1 has been successfully archived for item %2.', Comment = '%1 = Version Number, %2 = Item No.';
@@ -326,8 +333,16 @@ codeunit 60000 "Table Events"
         BOMComponent.RESET();
         BOMComponent.SETRANGE("Parent Item No.", Item."No.");
         IF BOMComponent.FindSet() THEN BEGIN
+            // IMPORTANTE: Recalcular costes ANTES de archivar la versión
+            // Esto asegura que la versión archivada refleja los costes actuales calculados
+            RecipeFluctuationMgt.FixRecipeCost(Item."No.");
+
+            // Recargar el item con los costes actualizados
+            if not ItemRefreshed.Get(Item."No.") then
+                ItemRefreshed := Item;
+
             BOMVersionHeader.Reset();
-            BOMVersionHeader.SETRANGE("Item No.", Item."No.");
+            BOMVersionHeader.SETRANGE("Item No.", ItemRefreshed."No.");
             IF BOMVersionHeader.FindLast() THEN BEGIN
                 PreviousVersionNum := BOMVersionHeader."BOM Version";
                 VersionNum := PreviousVersionNum + 1;
@@ -335,22 +350,22 @@ codeunit 60000 "Table Events"
                 VersionNum := 1;
 
             BOMVersionHeader.Init();
-            BOMVersionHeader.VALIDATE("Item No.", Item."No.");
+            BOMVersionHeader.VALIDATE("Item No.", ItemRefreshed."No.");
             BOMVersionHeader.VALIDATE("BOM Version", VersionNum);
-            BOMVersionHeader.VALIDATE(Description, Item.Description);
-            BOMVersionHeader.VALIDATE("Base Unit of Measure", Item."Base Unit of Measure");
-            BOMVersionHeader.VALIDATE("Lote Receta", Item."Lote Receta");
-            BOMVersionHeader.VALIDATE("Statistics Lot", Item."Statistics Lot");
-            BOMVersionHeader.VALIDATE("Statistics Unit of Measurement", Item."Statistics Unit of Measurement");
+            BOMVersionHeader.VALIDATE(Description, ItemRefreshed.Description);
+            BOMVersionHeader.VALIDATE("Base Unit of Measure", ItemRefreshed."Base Unit of Measure");
+            BOMVersionHeader.VALIDATE("Lote Receta", ItemRefreshed."Lote Receta");
+            BOMVersionHeader.VALIDATE("Statistics Lot", ItemRefreshed."Statistics Lot");
+            BOMVersionHeader.VALIDATE("Statistics Unit of Measurement", ItemRefreshed."Statistics Unit of Measurement");
             BOMVersionHeader.VALIDATE("Version Date", WORKDATE());
-            BOMVersionHeader.StandarCost := Item."Standard Cost";
-            BOMVersionHeader.UnitCost := Item."Unit Cost";
-            BOMVersionHeader.CosteLMFijado := Item.Receta_CosteLMFijado;
-            BOMVersionHeader.CostesGenerales := CalcAditionalFixedTotalCoste(Item."No.", 0);
-            BOMVersionHeader.ExWork := CalcAditionalFixedTotalCoste(Item."No.", 0) + Item.Receta_CosteLMFijado;
+            BOMVersionHeader.StandarCost := ItemRefreshed."Standard Cost";
+            BOMVersionHeader.UnitCost := ItemRefreshed."Unit Cost";
+            BOMVersionHeader.CosteLMFijado := ItemRefreshed.Receta_CosteLMFijado;
+            BOMVersionHeader.CostesGenerales := CalcAditionalFixedTotalCoste(ItemRefreshed."No.", 0);
+            BOMVersionHeader.ExWork := CalcAditionalFixedTotalCoste(ItemRefreshed."No.", 0) + ItemRefreshed.Receta_CosteLMFijado;
 
             // Copiar el campo Elaboration (BLOB)
-            CopyElaborationField(Item, BOMVersionHeader);
+            CopyElaborationField(ItemRefreshed, BOMVersionHeader);
 
             BOMVersionHeader.Insert();
             REPEAT
@@ -361,7 +376,7 @@ codeunit 60000 "Table Events"
             UNTIL BOMComponent.Next() = 0;
 
             RecetaComentarios.Reset();
-            RecetaComentarios.SETRANGE("No.", Item."No.");
+            RecetaComentarios.SETRANGE("No.", ItemRefreshed."No.");
             IF RecetaComentarios.FindSet() THEN
                 REPEAT
                     BOMCommentVersion.Init();
@@ -371,7 +386,7 @@ codeunit 60000 "Table Events"
                 UNTIL RecetaComentarios.Next() = 0;
 
             BOMAditionalCost.Reset();
-            BOMAditionalCost.SETRANGE("Item No", Item."No.");
+            BOMAditionalCost.SETRANGE("Item No", ItemRefreshed."No.");
             BOMAditionalCost.SETRANGE("BOM Version", 0);
             IF BOMAditionalCost.FindSet() THEN
                 REPEAT
@@ -385,10 +400,10 @@ codeunit 60000 "Table Events"
 
             // Comparar con versión anterior y enviar email si hay cambios
             IF PreviousVersionNum > 0 THEN
-                RecipeFluctuationMgt.CompareAndSendBOMVersionEmail(Item."No.", PreviousVersionNum, VersionNum);
+                RecipeFluctuationMgt.CompareAndSendBOMVersionEmail(ItemRefreshed."No.", PreviousVersionNum, VersionNum);
 
             // Mensaje de confirmación
-            MESSAGE(VersionArchivedMsg, VersionNum, Item."No.");
+            MESSAGE(VersionArchivedMsg, VersionNum, ItemRefreshed."No.");
         END;
     END;
 
