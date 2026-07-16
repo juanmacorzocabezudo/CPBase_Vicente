@@ -58,6 +58,16 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Price Fluctuation - Property Caption</note>
         </trans-unit>
+        <trans-unit id="Table 836856850 - Field 4008956829 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Change Source</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Price Fluctuation - Field Change Source - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Table 836856850 - Field 4008956829 - Property 62802879" size-unit="char" translate="yes" xml:space="preserve">
+          <source> ,AlxModCosteEstandar,Recipe Certification,Automatic Process,Manual</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Price Fluctuation - Field Change Source - Property OptionCaption</note>
+        </trans-unit>
         <trans-unit id="Table 836856850 - Field 99192652 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Current BOM Total Cost</source>
           <note from="Developer" annotates="general" priority="2"></note>
@@ -328,6 +338,26 @@
           <note from="Developer" annotates="general" priority="2">%1 = Old Item No., %2 = Old Description, %3 = New Item No., %4 = New Description, %5 = Parent Item No.</note>
           <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - NamedType TriggerSubstitutionLbl</note>
         </trans-unit>
+        <trans-unit id="Codeunit 3519696695 - Method 3251078565 - NamedType 2491448598" size-unit="char" translate="yes" xml:space="preserve">
+          <source>&lt;tr%1&gt;&lt;td style="font-weight:bold;padding:8px;background-color:#f0f0f0;"&gt;%2&lt;/td&gt;&lt;td style="padding:8px;"&gt;%3&lt;/td&gt;&lt;/tr&gt;</source>
+          <note from="Developer" annotates="general" priority="2">%1=Style attribute, %2=Field name, %3=Field value</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - Method BuildCurrentVersionTable - NamedType FieldRowLbl</note>
+        </trans-unit>
+        <trans-unit id="Codeunit 3519696695 - Method 2832166354 - NamedType 2491448598" size-unit="char" translate="yes" xml:space="preserve">
+          <source>&lt;tr%1&gt;&lt;td style="font-weight:bold;padding:8px;background-color:#f0f0f0;"&gt;%2&lt;/td&gt;&lt;td style="padding:8px;"&gt;%3&lt;/td&gt;&lt;/tr&gt;</source>
+          <note from="Developer" annotates="general" priority="2">%1=Style attribute, %2=Field name, %3=Field value</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - Method BuildFixedFluctuationTable - NamedType FieldRowLbl</note>
+        </trans-unit>
+        <trans-unit id="Codeunit 3519696695 - Method 2016232086 - NamedType 2491448598" size-unit="char" translate="yes" xml:space="preserve">
+          <source>&lt;tr%1&gt;&lt;td style="font-weight:bold;padding:8px;background-color:#f0f0f0;"&gt;%2&lt;/td&gt;&lt;td style="padding:8px;"&gt;%3&lt;/td&gt;&lt;/tr&gt;</source>
+          <note from="Developer" annotates="general" priority="2">%1=Style attribute, %2=Field name, %3=Field value</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - Method BuildVersionTable - NamedType FieldRowLbl</note>
+        </trans-unit>
+        <trans-unit id="Codeunit 3519696695 - Method 4122576738 - NamedType 3871721722" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Cambios en versión de receta - %1 (Receta fijada → v%2)</source>
+          <note from="Developer" annotates="general" priority="2">%1=Item No, %2=Current Version</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - Method CompareAndSendBOMVersionEmail - NamedType SubjectLbl</note>
+        </trans-unit>
         <trans-unit id="Codeunit 890326410 - NamedType 2906281135" size-unit="char" translate="yes" xml:space="preserve">
           <source>Do you want to activate product %1 and change its number to %2, including all its BOM components?</source>
           <note from="Developer" annotates="general" priority="2">%1 = Old Item No., %2 = New Item No.</note>
@@ -352,6 +382,11 @@
           <source>This product is already active or does not have a DES-MA, DES-MP, or DES-PT prefix. It cannot be activated again.</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Codeunit Item Management - NamedType ProductAlreadyActiveErr</note>
+        </trans-unit>
+        <trans-unit id="Codeunit 824241395 - Method 1467857412 - NamedType 2190520327" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Recipe version %1 has been successfully archived for item %2.</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Version Number, %2 = Item No.</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Codeunit Table Events - Method ArchiveBOMVersion - NamedType VersionArchivedMsg</note>
         </trans-unit>
         <trans-unit id="Page 3239952495 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>BOM Additional Cost</source>
@@ -1453,6 +1488,21 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Page WS Purchase Prices - Control N° Proveedor - Property Caption</note>
         </trans-unit>
+        <trans-unit id="Report 3593816868 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Archive First Version - All Recipes</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Archive First Version All - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Report 3593816868 - NamedType 4248168359" size-unit="char" translate="yes" xml:space="preserve">
+          <source>%1 recipes archived successfully.\Total recipes found: %2\Skipped (already have versions or no components): %3</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Processed count, %2 = Total count, %3 = Skipped count</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Archive First Version All - NamedType CompletionMsg</note>
+        </trans-unit>
+        <trans-unit id="Report 3593816868 - NamedType 1305737990" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Archiving first version...\Recipe: #1##########\Processed: #2######</source>
+          <note from="Developer" annotates="general" priority="2">#1 = Item No., #2 = Processed count</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Archive First Version All - NamedType ProcessingMsg</note>
+        </trans-unit>
         <trans-unit id="Report 1283428529 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Production Part</source>
           <note from="Developer" annotates="general" priority="2"></note>
@@ -1742,6 +1792,61 @@
           <source>Show Recursos</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Report CP Production Part - Control VarMostrarRecursos - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Update Best Vendors</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - NamedType 3366217384" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Process completed.\Updated items: %1\Processed items: %2\Errors: %3</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Updated items, %2 = Processed items, %3 = Errors</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - NamedType CompletedMsg</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - NamedType 3681094193" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Item %1: %2</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Item No., %2 = Error text</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - NamedType ErrorItemLbl</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - NamedType 1801285527" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Errors occurred during processing:\%1</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Error log</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - NamedType ErrorLogMsg</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - NamedType 841392819" size-unit="char" translate="yes" xml:space="preserve">
+          <source>This process will update the Vendor No. field in the Item table for all items that have a Best Vendor defined in active purchase price lists.\Only items where the current Vendor No. differs from the Best Vendor will be updated.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - NamedType InfoTextLbl</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - NamedType 2184892397" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Item not found</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - NamedType ItemNotFoundErr</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - NamedType 1305737990" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Processing items...\Item No.: #1################\Processed: #2######</source>
+          <note from="Developer" annotates="general" priority="2">#1 = Item No., #2 = Processed count</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - NamedType ProcessingMsg</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - Control 419426744 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Information</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - Control Information - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - Control 2346885236 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Options</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - Control Options - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - Control 3993650900 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Show detailed error messages if any item update fails.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - Control ShowErrors - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="Report 1258523791 - Control 3993650900 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Show Error Details</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Report CP Update Best Vendors - Control ShowErrors - Property Caption</note>
         </trans-unit>
         <trans-unit id="Report 1879606555 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Event Budget</source>
@@ -2498,6 +2603,16 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension BOM Aditional Cost OLD - Property Caption</note>
         </trans-unit>
+        <trans-unit id="PageExtension 883850228 - Control 562556750 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 883850228">
+          <source>Especifica las instrucciones de elaboración para esta versión de LM.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension BOM Version List - Control Elaboration - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="PageExtension 883850228 - Control 562556750 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 883850228">
+          <source>Elaboración</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension BOM Version List - Control Elaboration - Property Caption</note>
+        </trans-unit>
         <trans-unit id="PageExtension 50694238 - NamedType 750120336" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 50694238">
           <source>Do you want to set this vendor as the best for item %1? There is currently another vendor marked as the best.</source>
           <note from="Developer" annotates="general" priority="2">%1 = Item No.</note>
@@ -2844,12 +2959,17 @@
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Posted Sales Cr. Memo Subform - Control CP Return - Property ToolTip</note>
         </trans-unit>
         <trans-unit id="PageExtension 2341972053 - NamedType 3734324050" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
-          <source>&lt;h3&gt;Items with price changes&lt;/h3&gt;</source>
+          <source>&lt;h3&gt;Productos con cambio de precio&lt;/h3&gt;</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType ItemPriceDetailsHdrLbl</note>
         </trans-unit>
+        <trans-unit id="PageExtension 2341972053 - NamedType 741817671" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
+          <source>%1 componentes de LM actualizados. Recálculo de costes de recetas omitido (Precios negociados activado).</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Number of components</note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType NegotiatedPricesMsg</note>
+        </trans-unit>
         <trans-unit id="PageExtension 2341972053 - NamedType 260472870" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
-          <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Code&lt;/th&gt;&lt;th&gt;Description&lt;/th&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Previous Price&lt;/th&gt;&lt;th&gt;New Price&lt;/th&gt;&lt;/tr&gt;</source>
+          <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Código&lt;/th&gt;&lt;th&gt;Descripción&lt;/th&gt;&lt;th&gt;Marca&lt;/th&gt;&lt;th&gt;Tipo&lt;/th&gt;&lt;th&gt;Precio Anterior&lt;/th&gt;&lt;th&gt;Precio Nuevo&lt;/th&gt;&lt;/tr&gt;</source>
           <note from="Developer" annotates="general" priority="2">#333 and #fff are HTML hex color codes, not placeholders.</note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType TableHdrLbl</note>
         </trans-unit>
@@ -2872,6 +2992,11 @@
           <source>Proceso completado correctamente.\Se han actualizado %1 componentes de LM y recalculado %2 recetas.</source>
           <note from="Developer" annotates="general" priority="2">%1 = Updated components, %2 = Processed recipes</note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType VerifySuccessMsg</note>
+        </trans-unit>
+        <trans-unit id="PageExtension 2341972053 - NamedType 733679465" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
+          <source>Proceso completado correctamente.\Se han actualizado %1 componentes de LM.</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Updated components</note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType VerifySuccessMsg2</note>
         </trans-unit>
         <trans-unit id="PageExtension 2341972053 - Method 3282834342 - NamedType 750120336" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
           <source>Do you want to set this vendor as the best for item %1? There is currently another vendor marked as the best.</source>
@@ -2979,12 +3104,17 @@
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - NamedType ClearFiltersLbl</note>
         </trans-unit>
         <trans-unit id="PageExtension 4165496608 - NamedType 3734324050" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 4165496608">
-          <source>&lt;h3&gt;Items with price changes&lt;/h3&gt;</source>
+          <source>&lt;h3&gt;Productos con cambio de precio&lt;/h3&gt;</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - NamedType ItemPriceDetailsHdrLbl</note>
         </trans-unit>
+        <trans-unit id="PageExtension 4165496608 - NamedType 741817671" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 4165496608">
+          <source>%1 componentes de LM actualizados. Recálculo de costes de recetas omitido (Precios negociados activado).</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Number of components</note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - NamedType NegotiatedPricesMsg</note>
+        </trans-unit>
         <trans-unit id="PageExtension 4165496608 - NamedType 260472870" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 4165496608">
-          <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Code&lt;/th&gt;&lt;th&gt;Description&lt;/th&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Previous Price&lt;/th&gt;&lt;th&gt;New Price&lt;/th&gt;&lt;/tr&gt;</source>
+          <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Código&lt;/th&gt;&lt;th&gt;Descripción&lt;/th&gt;&lt;th&gt;Marca&lt;/th&gt;&lt;th&gt;Tipo&lt;/th&gt;&lt;th&gt;Precio Anterior&lt;/th&gt;&lt;th&gt;Precio Nuevo&lt;/th&gt;&lt;/tr&gt;</source>
           <note from="Developer" annotates="general" priority="2">#333 and #fff are HTML hex color codes, not placeholders.</note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - NamedType TableHdrLbl</note>
         </trans-unit>
@@ -3017,6 +3147,16 @@
           <source>Verify Lines</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - Action CPVerifyLines - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="PageExtension 4165496608 - Control 2086888009 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 4165496608">
+          <source>If enabled, price changes in this list will not trigger recipe cost recalculations.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - Control CPNegotiatedPrices - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="PageExtension 4165496608 - Control 2086888009 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 4165496608">
+          <source>Negotiated Prices</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - Control CPNegotiatedPrices - Property Caption</note>
         </trans-unit>
         <trans-unit id="PageExtension 4165496608 - Control 284195533 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 4165496608">
           <source>Quick Filters</source>
@@ -3064,12 +3204,12 @@
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Receta - NamedType ConfirmCalcStdCostQst</note>
         </trans-unit>
         <trans-unit id="PageExtension 2965434968 - NamedType 3459340588" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2965434968">
-          <source>&lt;h3&gt;Components with price fluctuation&lt;/h3&gt;</source>
+          <source>&lt;h3&gt;Componentes de la Lista de Materiales&lt;/h3&gt;</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Receta - NamedType FluctComponentsHdrLbl</note>
         </trans-unit>
         <trans-unit id="PageExtension 2965434968 - NamedType 260472870" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2965434968">
-          <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Code&lt;/th&gt;&lt;th&gt;Description&lt;/th&gt;&lt;th&gt;Type&lt;/th&gt;&lt;th&gt;Previous Price&lt;/th&gt;&lt;th&gt;New Price&lt;/th&gt;&lt;/tr&gt;</source>
+          <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Nº&lt;/th&gt;&lt;th&gt;Descripción&lt;/th&gt;&lt;th&gt;Marca&lt;/th&gt;&lt;th&gt;Cantidad por Lote&lt;/th&gt;&lt;th&gt;Cód. unidad medida&lt;/th&gt;&lt;th&gt;Coste Estándar Marcado&lt;/th&gt;&lt;th&gt;Coste Total&lt;/th&gt;&lt;/tr&gt;</source>
           <note from="Developer" annotates="general" priority="2">#333 and #fff are HTML hex color codes, not placeholders.</note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Receta - NamedType TableHdrLbl</note>
         </trans-unit>
@@ -3372,6 +3512,21 @@
           <source>Elaboration</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">TableExtension Assembly Header - Field Elaboration - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="TableExtension 1631993751 - Field 562556750 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1631993751">
+          <source>Elaboración</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">TableExtension BOM Version Header - Field Elaboration - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="TableExtension 713044821 - Field 2785637113 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1961578924">
+          <source>Specifies if prices in this list are negotiated and should not trigger recipe cost recalculations.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">TableExtension CP Price List Header - Field CP Negotiated Prices - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="TableExtension 713044821 - Field 2785637113 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1961578924">
+          <source>Negotiated Prices</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">TableExtension CP Price List Header - Field CP Negotiated Prices - Property Caption</note>
         </trans-unit>
         <trans-unit id="TableExtension 3464724762 - Field 2831361103 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1519909599">
           <source>Proposed Price</source>

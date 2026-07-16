@@ -280,4 +280,165 @@ codeunit 60000 "Table Events"
     end;
 
     #endregion
+
+    #region "Item" 27
+
+    //JMC - 2026-06-22
+    [EventSubscriber(ObjectType::Table, Database::Item, 'OnAfterModifyEvent', '', false, false)]
+    local procedure OnItemStatusChanged(var Rec: Record Item; var xRec: Record Item; RunTrigger: Boolean)
+    var
+        RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
+    begin
+        // OPTIMIZACIÓN: Verificar primero si el status cambió (condición más frecuentemente falsa)
+        // Esto evita ejecutar el resto del código en el 99.9% de las modificaciones de Item
+        if xRec."Status LM" = Rec."Status LM" then
+            exit;
+
+        // Solo procesar si cambió específicamente a "Certificated"
+        if Rec."Status LM" <> Rec."Status LM"::Certificated then
+            exit;
+
+        if Rec.IsTemporary() then
+            exit;
+
+        if not RunTrigger then
+            exit;
+
+        // Respetar el flag SuppressEvents para evitar cascadas durante ProcessParentRecipes
+        if RecipeFluctuationMgt.IsSuppressEvents() then
+            exit;
+
+        ArchiveBOMVersion(Rec);
+    end;
+
+    //JMC - 2026-06-22
+    local procedure ArchiveBOMVersion(Item: record Item)
+    VAR
+        BOMComponent: Record "BOM Component";
+        RecetaComentarios: Record 50009;
+        BOMVersionHeader: Record 50024;
+        BOMVersionLines: Record 50025;
+        BOMCommentVersion: Record 50026;
+        BOMAditionalCost: Record 50029;
+        BOMAditionalCostVersion: Record 50029;
+        RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
+        ItemRefreshed: Record Item;
+        VersionNum: Integer;
+        PreviousVersionNum: Integer;
+        VersionArchivedMsg: Label 'Recipe version %1 has been successfully archived for item %2.', Comment = '%1 = Version Number, %2 = Item No.';
+    BEGIN
+        CLEAR(VersionNum);
+        CLEAR(PreviousVersionNum);
+
+        BOMComponent.RESET();
+        BOMComponent.SETRANGE("Parent Item No.", Item."No.");
+        IF BOMComponent.FindSet() THEN BEGIN
+            // IMPORTANTE: Recalcular costes ANTES de archivar la versión
+            // Esto asegura que la versión archivada refleja los costes actuales calculados
+            RecipeFluctuationMgt.FixRecipeCost(Item."No.");
+
+            // Recargar el item con los costes actualizados
+            if not ItemRefreshed.Get(Item."No.") then
+                ItemRefreshed := Item;
+
+            BOMVersionHeader.Reset();
+            BOMVersionHeader.SETRANGE("Item No.", ItemRefreshed."No.");
+            IF BOMVersionHeader.FindLast() THEN BEGIN
+                PreviousVersionNum := BOMVersionHeader."BOM Version";
+                VersionNum := PreviousVersionNum + 1;
+            END ELSE
+                VersionNum := 1;
+
+            BOMVersionHeader.Init();
+            BOMVersionHeader.VALIDATE("Item No.", ItemRefreshed."No.");
+            BOMVersionHeader.VALIDATE("BOM Version", VersionNum);
+            BOMVersionHeader.VALIDATE(Description, ItemRefreshed.Description);
+            BOMVersionHeader.VALIDATE("Base Unit of Measure", ItemRefreshed."Base Unit of Measure");
+            BOMVersionHeader.VALIDATE("Lote Receta", ItemRefreshed."Lote Receta");
+            BOMVersionHeader.VALIDATE("Statistics Lot", ItemRefreshed."Statistics Lot");
+            BOMVersionHeader.VALIDATE("Statistics Unit of Measurement", ItemRefreshed."Statistics Unit of Measurement");
+            BOMVersionHeader.VALIDATE("Version Date", WORKDATE());
+            BOMVersionHeader.StandarCost := ItemRefreshed."Standard Cost";
+            BOMVersionHeader.UnitCost := ItemRefreshed."Unit Cost";
+            BOMVersionHeader.CosteLMFijado := ItemRefreshed.Receta_CosteLMFijado;
+            BOMVersionHeader.CostesGenerales := CalcAditionalFixedTotalCoste(ItemRefreshed."No.", 0);
+            BOMVersionHeader.ExWork := CalcAditionalFixedTotalCoste(ItemRefreshed."No.", 0) + ItemRefreshed.Receta_CosteLMFijado;
+
+            // Copiar el campo Elaboration (BLOB)
+            CopyElaborationField(ItemRefreshed, BOMVersionHeader);
+
+            BOMVersionHeader.Insert();
+            REPEAT
+                BOMVersionLines.Init();
+                BOMVersionLines.TRANSFERFIELDS(BOMComponent);
+                BOMVersionLines."BOM Version" := VersionNum;
+                BOMVersionLines.Insert();
+            UNTIL BOMComponent.Next() = 0;
+
+            RecetaComentarios.Reset();
+            RecetaComentarios.SETRANGE("No.", ItemRefreshed."No.");
+            IF RecetaComentarios.FindSet() THEN
+                REPEAT
+                    BOMCommentVersion.Init();
+                    BOMCommentVersion.TRANSFERFIELDS(RecetaComentarios);
+                    BOMCommentVersion."BOM Version" := VersionNum;
+                    BOMCommentVersion.Insert();
+                UNTIL RecetaComentarios.Next() = 0;
+
+            BOMAditionalCost.Reset();
+            BOMAditionalCost.SETRANGE("Item No", ItemRefreshed."No.");
+            BOMAditionalCost.SETRANGE("BOM Version", 0);
+            IF BOMAditionalCost.FindSet() THEN
+                REPEAT
+                    BOMAditionalCost.VALIDATE(BOMAditionalCost.Value);
+
+                    BOMAditionalCostVersion.Init();
+                    BOMAditionalCostVersion.TRANSFERFIELDS(BOMAditionalCost);
+                    BOMAditionalCostVersion."BOM Version" := VersionNum;
+                    BOMAditionalCostVersion.Insert();
+                UNTIL BOMAditionalCost.Next() = 0;
+
+            // Comparar con versión anterior y enviar email si hay cambios
+            IF PreviousVersionNum > 0 THEN
+                RecipeFluctuationMgt.CompareAndSendBOMVersionEmail(ItemRefreshed."No.", PreviousVersionNum, VersionNum);
+
+            // Mensaje de confirmación
+            MESSAGE(VersionArchivedMsg, VersionNum, ItemRefreshed."No.");
+        END;
+    END;
+
+    //JMC - 2026-06-22
+    local procedure CopyElaborationField(var SourceItem: Record Item; var TargetBOMVersionHeader: Record 50024)
+    var
+        SourceInStream: InStream;
+        TargetOutStream: OutStream;
+    begin
+        // Copiar el campo Elaboration (BLOB) del Item a BOMVersionHeader
+        SourceItem.CalcFields(Elaboration);
+        if SourceItem.Elaboration.HasValue() then begin
+            SourceItem.Elaboration.CreateInStream(SourceInStream);
+            TargetBOMVersionHeader.Elaboration.CreateOutStream(TargetOutStream);
+            CopyStream(TargetOutStream, SourceInStream);
+        end;
+    end;
+
+    //JMC - 2026-06-22
+    PROCEDURE CalcAditionalFixedTotalCoste(ItemNo: Code[20]; BOMVersion: Integer) ReturnCost: Decimal;
+    VAR
+        BOMAditionalCostCheck: Record 50029;
+    BEGIN
+        CLEAR(ReturnCost);
+
+        BOMAditionalCostCheck.Reset();
+        BOMAditionalCostCheck.SETRANGE("Item No", ItemNo);
+        BOMAditionalCostCheck.SETRANGE("BOM Version", BOMVersion);
+        IF BOMAditionalCostCheck.FindSet() THEN
+            REPEAT
+                ReturnCost := ReturnCost + BOMAditionalCostCheck."Aditional fixed cost";
+            UNTIL BOMAditionalCostCheck.Next() = 0;
+
+        EXIT(ReturnCost);
+    END;
+
+    #endregion
 }

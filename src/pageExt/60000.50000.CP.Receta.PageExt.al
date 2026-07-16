@@ -8,6 +8,15 @@ pageextension 60000 "Receta" extends Receta //50000
         modify(recetaItem) { Visible = false; }
         modify("Statistics Lot") { Visible = false; }
 
+        // Actualizar información de versión cuando cambia el estado
+        modify("Status LM")
+        {
+            trigger OnAfterValidate()
+            begin
+                CurrPage.Update(true);
+            end;
+        }
+
         addafter("Statistics Lot")
         {
             field(StatisticsLotDisplay; Rec."Statistics Lot")
@@ -242,11 +251,11 @@ pageextension 60000 "Receta" extends Receta //50000
         CalcStdCostSuccessMsg: Label 'The standard cost has been recalculated and updated successfully.';
         CalcStdCostErrorMsg: Label 'An error occurred while recalculating the standard cost.\Error: %1', Comment = '%1 = Error message';
         TriggerRecipeLbl: Label 'Receta: %1 - %2', Comment = '%1 = Item No., %2 = Item Description';
-        FluctComponentsHdrLbl: Label '<h3>Components with price fluctuation</h3>';
+        FluctComponentsHdrLbl: Label '<h3>Componentes de la Lista de Materiales</h3>';
         TableOpenLbl: Label '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">', Locked = true;
-        TableHdrLbl: Label '<tr style="background-color:#333;color:#fff;"><th>Code</th><th>Description</th><th>Type</th><th>Previous Price</th><th>New Price</th></tr>', Comment = '#333 and #fff are HTML hex color codes, not placeholders.';
+        TableHdrLbl: Label '<tr style="background-color:#333;color:#fff;"><th>Nº</th><th>Descripción</th><th>Marca</th><th>Cantidad por Lote</th><th>Cód. unidad medida</th><th>Coste Estándar Marcado</th><th>Coste Total</th></tr>', Comment = '#333 and #fff are HTML hex color codes, not placeholders.';
         TableCloseLbl: Label '</table>', Locked = true;
-        RowTdLbl: Label '<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>', Locked = true;
+        RowTdLbl: Label '<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>%6</td><td>%7</td></tr>', Locked = true;
 
     [TryFunction]
     local procedure TryProcessAndFixRecipe(ItemNo: Code[20])
@@ -260,29 +269,33 @@ pageextension 60000 "Receta" extends Receta //50000
         if DetailsHtml <> '' then
             RecipeFluctuationMgt.SetEmailTriggerDetails(DetailsHtml);
         RecipeFluctuationMgt.ProcessAndFixSingleRecipe(ItemNo);
-        RecipeFluctuationMgt.FlushConsolidatedEmail();
+        //JMC - 2026-06-22: Email de fluctuación de costes desactivado (ahora solo se envía al certificar)
+        //RecipeFluctuationMgt.FlushConsolidatedEmail();
     end;
 
     local procedure BuildFluctuatingComponentsHtml(ItemNo: Code[20]): Text
     var
         BOMComponent: Record "BOM Component";
-        ComponentItem: Record Item;
         RowsHtml: Text;
         DetailsHtml: Text;
+        TotalCost: Decimal;
     begin
         BOMComponent.SetRange("Parent Item No.", ItemNo);
         BOMComponent.SetRange(Type, BOMComponent.Type::Item);
         BOMComponent.SetRange(Maquila, false);
         if BOMComponent.FindSet() then
             repeat
-                if ComponentItem.Get(BOMComponent."No.") then
-                    if ComponentItem."Unit Cost" <> ComponentItem."Standard Cost" then
-                        RowsHtml += StrSubstNo(RowTdLbl,
-                            ComponentItem."No.",
-                            ComponentItem.Description,
-                            GetItemTypeLabel(ComponentItem."No. Series"),
-                            Format(ComponentItem."Standard Cost"),
-                            Format(ComponentItem."Unit Cost"));
+                // Calcular coste total: Cantidad por Lote × Coste Estándar Marcado
+                TotalCost := BOMComponent."Cantidad por Lote" * BOMComponent.CosteUnitario;
+
+                RowsHtml += StrSubstNo(RowTdLbl,
+                    BOMComponent."No.",
+                    BOMComponent.Description,
+                    BOMComponent."Variant Code",
+                    Format(BOMComponent."Cantidad por Lote"),
+                    BOMComponent."Unit of Measure Code",
+                    Format(BOMComponent.CosteUnitario),
+                    Format(TotalCost));
             until BOMComponent.Next() = 0;
 
         if RowsHtml = '' then

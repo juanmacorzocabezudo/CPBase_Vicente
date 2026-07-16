@@ -2,6 +2,15 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
 {
     layout
     {
+        addafter(Description)
+        {
+            field(CPNegotiatedPrices; Rec."CP Negotiated Prices")
+            {
+                ApplicationArea = All;
+                Caption = 'Negotiated Prices';
+                ToolTip = 'If enabled, price changes in this list will not trigger recipe cost recalculations.';
+            }
+        }
         addafter(General)
         {
             group(Filters)
@@ -225,6 +234,16 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
             exit;
         end;
 
+        // Si la lista tiene marcado "Precios negociados", solo actualizar componentes sin procesar recetas
+        if Rec."CP Negotiated Prices" then begin
+            UpdateComponentsOnly(DraftItemNos, UpdatedComponents);
+            if UpdatedComponents > 0 then
+                Message(NegotiatedPricesMsg, UpdatedComponents)
+            else
+                Message(VerifyNoRecipesMsg);
+            exit;
+        end;
+
         RecipeFluctuationMgt.ClearEmailBuffer();
         RecipeFluctuationMgt.SetEmailTriggerSource(TriggerVerifyLinesLbl);
         RecipeFluctuationMgt.SetSuppressMessages(true);
@@ -242,7 +261,7 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
                             NewPrice := BestVendorLine."Direct Unit Cost";
                             if PreviousPrice <> NewPrice then
                                 if Item.Get(ItemNo) then
-                                    ItemDetailRows += StrSubstNo(RowTdLbl, ItemNo, Item.Description, GetItemTypeLabel(Item."No. Series"), Format(PreviousPrice), Format(NewPrice));
+                                    ItemDetailRows += StrSubstNo(RowTdLbl, ItemNo, Item.Description, Item.MarcaProveedor, GetItemTypeLabel(Item."No. Series"), Format(PreviousPrice), Format(NewPrice));
                             ProcessedItemsForDetails.Add(ItemNo);
                             DetailCaptured := true;
                         end;
@@ -273,6 +292,29 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
             Message(VerifySuccessMsg, UpdatedComponents, ProcessedRecipes.Count())
         else
             Message(VerifyNoRecipesMsg);
+    end;
+
+    local procedure UpdateComponentsOnly(DraftItemNos: List of [Code[20]]; var UpdatedComponents: Integer)
+    var
+        BOMComponent: Record "BOM Component";
+        BestVendorLine: Record "Price List Line";
+        ItemNo: Code[20];
+    begin
+        // Actualizar solo componentes de LM sin procesar fluctuaciones de recetas
+        foreach ItemNo in DraftItemNos do
+            if FindBestVendorLine(ItemNo, BestVendorLine) then begin
+                BOMComponent.Reset();
+                BOMComponent.SetRange(Type, BOMComponent.Type::Item);
+                BOMComponent.SetRange("No.", ItemNo);
+                if BOMComponent.FindSet() then
+                    repeat
+                        BOMComponent."Proveedor por Defecto" := BestVendorLine."Source No.";
+                        BOMComponent."Variant Code" := BestVendorLine."Variant Code";
+                        BOMComponent.CosteUnitario := BestVendorLine."Direct Unit Cost";
+                        BOMComponent.Modify(false);
+                        UpdatedComponents += 1;
+                    until BOMComponent.Next() = 0;
+            end;
     end;
 
     local procedure FindBestVendorLine(ItemNo: Code[20]; var BestLine: Record "Price List Line"): Boolean
@@ -318,12 +360,13 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
 
     var
         TriggerVerifyLinesLbl: Label 'Verificación de líneas de precios de compra';
+        NegotiatedPricesMsg: Label '%1 componentes de LM actualizados. Recálculo de costes de recetas omitido (Precios negociados activado).', Comment = '%1 = Number of components';
         VerifySuccessMsg: Label 'Proceso completado correctamente.\Se han actualizado %1 componentes de LM y recalculado %2 recetas.', Comment = '%1 = Updated components, %2 = Processed recipes';
         VerifyNoItemsMsg: Label 'No se encontraron líneas en estado borrador con productos para procesar.';
         VerifyNoRecipesMsg: Label 'Verificación completada. No se encontraron componentes de LM afectados por los productos modificados.';
-        ItemPriceDetailsHdrLbl: Label '<h3>Items with price changes</h3>';
+        ItemPriceDetailsHdrLbl: Label '<h3>Productos con cambio de precio</h3>';
         TableOpenLbl: Label '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">', Locked = true;
-        TableHdrLbl: Label '<tr style="background-color:#333;color:#fff;"><th>Code</th><th>Description</th><th>Type</th><th>Previous Price</th><th>New Price</th></tr>', Comment = '#333 and #fff are HTML hex color codes, not placeholders.';
+        TableHdrLbl: Label '<tr style="background-color:#333;color:#fff;"><th>Código</th><th>Descripción</th><th>Marca</th><th>Tipo</th><th>Precio Anterior</th><th>Precio Nuevo</th></tr>', Comment = '#333 and #fff are HTML hex color codes, not placeholders.';
         TableCloseLbl: Label '</table>', Locked = true;
-        RowTdLbl: Label '<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td></tr>', Locked = true;
+        RowTdLbl: Label '<tr><td>%1</td><td>%2</td><td>%3</td><td>%4</td><td>%5</td><td>%6</td></tr>', Locked = true;
 }

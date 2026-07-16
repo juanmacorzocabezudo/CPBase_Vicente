@@ -211,6 +211,13 @@ table 60007 "CP Recipe Price Fluctuation"
             DecimalPlaces = 2 : 2;
             Editable = false;
         }
+        field(50; "Change Source"; Option)
+        {
+            Caption = 'Change Source';
+            OptionMembers = " ","AlxModCosteEstandar","Recipe Certification","Automatic Process","Manual";
+            OptionCaption = ' ,AlxModCosteEstandar,Recipe Certification,Automatic Process,Manual';
+            Editable = false;
+        }
     }
 
     keys
