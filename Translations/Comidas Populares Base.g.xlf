@@ -58,6 +58,16 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Price Fluctuation - Property Caption</note>
         </trans-unit>
+        <trans-unit id="Table 836856850 - Field 4008956829 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Change Source</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Price Fluctuation - Field Change Source - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Table 836856850 - Field 4008956829 - Property 62802879" size-unit="char" translate="yes" xml:space="preserve">
+          <source> ,AlxModCosteEstandar,Recipe Certification,Automatic Process,Manual</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Price Fluctuation - Field Change Source - Property OptionCaption</note>
+        </trans-unit>
         <trans-unit id="Table 836856850 - Field 99192652 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Current BOM Total Cost</source>
           <note from="Developer" annotates="general" priority="2"></note>
@@ -2953,6 +2963,11 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType ItemPriceDetailsHdrLbl</note>
         </trans-unit>
+        <trans-unit id="PageExtension 2341972053 - NamedType 741817671" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
+          <source>%1 componentes de LM actualizados. Recálculo de costes de recetas omitido (Precios negociados activado).</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Number of components</note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Price List Line Review - NamedType NegotiatedPricesMsg</note>
+        </trans-unit>
         <trans-unit id="PageExtension 2341972053 - NamedType 260472870" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 2341972053">
           <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Código&lt;/th&gt;&lt;th&gt;Descripción&lt;/th&gt;&lt;th&gt;Marca&lt;/th&gt;&lt;th&gt;Tipo&lt;/th&gt;&lt;th&gt;Precio Anterior&lt;/th&gt;&lt;th&gt;Precio Nuevo&lt;/th&gt;&lt;/tr&gt;</source>
           <note from="Developer" annotates="general" priority="2">#333 and #fff are HTML hex color codes, not placeholders.</note>
@@ -3093,6 +3108,11 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - NamedType ItemPriceDetailsHdrLbl</note>
         </trans-unit>
+        <trans-unit id="PageExtension 4165496608 - NamedType 741817671" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 4165496608">
+          <source>%1 componentes de LM actualizados. Recálculo de costes de recetas omitido (Precios negociados activado).</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Number of components</note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - NamedType NegotiatedPricesMsg</note>
+        </trans-unit>
         <trans-unit id="PageExtension 4165496608 - NamedType 260472870" size-unit="char" translate="yes" xml:space="preserve" al-object-target="PageExtension 4165496608">
           <source>&lt;tr style="background-color:#333;color:#fff;"&gt;&lt;th&gt;Código&lt;/th&gt;&lt;th&gt;Descripción&lt;/th&gt;&lt;th&gt;Marca&lt;/th&gt;&lt;th&gt;Tipo&lt;/th&gt;&lt;th&gt;Precio Anterior&lt;/th&gt;&lt;th&gt;Precio Nuevo&lt;/th&gt;&lt;/tr&gt;</source>
           <note from="Developer" annotates="general" priority="2">#333 and #fff are HTML hex color codes, not placeholders.</note>
@@ -3127,6 +3147,16 @@
           <source>Verify Lines</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - Action CPVerifyLines - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="PageExtension 4165496608 - Control 2086888009 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 4165496608">
+          <source>If enabled, price changes in this list will not trigger recipe cost recalculations.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - Control CPNegotiatedPrices - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="PageExtension 4165496608 - Control 2086888009 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 4165496608">
+          <source>Negotiated Prices</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">PageExtension Purchase Price List - Control CPNegotiatedPrices - Property Caption</note>
         </trans-unit>
         <trans-unit id="PageExtension 4165496608 - Control 284195533 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Page 4165496608">
           <source>Quick Filters</source>
@@ -3487,6 +3517,16 @@
           <source>Elaboración</source>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">TableExtension BOM Version Header - Field Elaboration - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="TableExtension 713044821 - Field 2785637113 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1961578924">
+          <source>Specifies if prices in this list are negotiated and should not trigger recipe cost recalculations.</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">TableExtension CP Price List Header - Field CP Negotiated Prices - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="TableExtension 713044821 - Field 2785637113 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1961578924">
+          <source>Negotiated Prices</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">TableExtension CP Price List Header - Field CP Negotiated Prices - Property Caption</note>
         </trans-unit>
         <trans-unit id="TableExtension 3464724762 - Field 2831361103 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve" al-object-target="Table 1519909599">
           <source>Proposed Price</source>

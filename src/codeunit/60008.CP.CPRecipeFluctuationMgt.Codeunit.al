@@ -196,6 +196,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         Fluctuation."Detection Date" := CurrentDateTime();
         Fluctuation."Item No. Series" := Item."No. Series";
         Fluctuation."Fluctuation Items" := CopyStr(GetFluctuatingComponents(Item."No."), 1, MaxStrLen(Fluctuation."Fluctuation Items"));
+        Fluctuation."Change Source" := CurrentChangeSource;
         if not TryPopulateCostSnapshot(Fluctuation, Item) then;
         Fluctuation.Insert(true);
 
@@ -997,6 +998,9 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         SavedCurrentCost: Decimal;
         SavedHasTriggerCosts: Boolean;
     begin
+        // Marcar que los cambios provienen de AlxModCosteEstandar
+        CurrentChangeSource := CurrentChangeSource::AlxModCosteEstandar;
+
         SuppressMessages := true;
         // SuppressEvents evita que cada Item.Modify desencadene OnItemCostChanged y vuelva a iterar
         SuppressEvents := true;
@@ -1021,6 +1025,9 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         FlushConsolidatedEmail();
         SuppressEvents := false;
         SuppressMessages := false;
+
+        // Limpiar el origen después de procesar
+        Clear(CurrentChangeSource);
     end;
 
     procedure SetSuppressMessages(NewValue: Boolean)
@@ -1040,7 +1047,6 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         FixedFluctuation: Record "CP Recipe Price Fluctuation";
         CurrentHeader: Record 50024;
         CurrentBOMLines: Record 50025;
-        HasChanges: Boolean;
         EmailBody: Text;
         FixedTableHtml: Text;
         CurrentTableHtml: Text;
@@ -1049,6 +1055,13 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         Subject: Text;
         SubjectLbl: Label 'Cambios en versión de receta - %1 (Receta fijada → v%2)', Comment = '%1=Item No, %2=Current Version';
     begin
+        // Obtener la versión actual archivada primero para saber el coste
+        CurrentHeader.Reset();
+        CurrentHeader.SetRange("Item No.", ItemNo);
+        CurrentHeader.SetRange("BOM Version", CurrentVersion);
+        if not CurrentHeader.FindFirst() then
+            exit;
+
         // Obtener la entrada de fluctuación marcada como "Recipe Fixed"
         FixedFluctuation.Reset();
         FixedFluctuation.SetRange("Item No.", ItemNo);
@@ -1056,19 +1069,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         if not FixedFluctuation.FindFirst() then
             exit; // No hay receta fijada para comparar
 
-        // Obtener la versión actual archivada
-        CurrentHeader.Reset();
-        CurrentHeader.SetRange("Item No.", ItemNo);
-        CurrentHeader.SetRange("BOM Version", CurrentVersion);
-        if not CurrentHeader.FindFirst() then
-            exit;
-
         if not Item.Get(ItemNo) then
-            exit;
-
-        // Verificar si hay cambios entre la receta fijada y la versión actual
-        HasChanges := CheckFluctuationVsCurrentVersion(FixedFluctuation, CurrentHeader);
-        if not HasChanges then
             exit;
 
         // Construir tablas verticales comparando receta fijada vs versión actual
@@ -1104,17 +1105,21 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         SendBOMVersionEmail(Recipients, Subject, EmailBody);
     end;
 
-    //JMC - 2026-07-01
-    local procedure CheckFluctuationVsCurrentVersion(var FixedFluctuation: Record "CP Recipe Price Fluctuation"; var CurrentHeader: Record 50024): Boolean
+    //JMC - 2026-07-16
+    local procedure WasComponentModifiedFromStandardCost(ComponentItemNo: Code[20]): Boolean
+    var
+        ComponentFluctuation: Record "CP Recipe Price Fluctuation";
+        CutoffDateTime: DateTime;
     begin
-        // Comparar los costes de la receta fijada con la versión actual
-        if (FixedFluctuation."Fixed BOM Total Cost" <> CurrentHeader.CosteLMFijado) or
-           (FixedFluctuation."Fixed General Costs" <> CurrentHeader.CostesGenerales) or
-           (FixedFluctuation."Fixed EXWORK Standard" <> CurrentHeader.ExWork) then
-            exit(true);
+        // Verificar si el componente tiene una fluctuación de coste estándar reciente (últimas 24 horas)
+        CutoffDateTime := CurrentDateTime - (24 * 60 * 60 * 1000); // 24 horas atrás
 
-        // Si ningún campo cambió, no hay diferencias
-        exit(false);
+        ComponentFluctuation.Reset();
+        ComponentFluctuation.SetRange("Item No.", ComponentItemNo);
+        ComponentFluctuation.SetRange("Change Source", ComponentFluctuation."Change Source"::AlxModCosteEstandar);
+        ComponentFluctuation.SetFilter("Detection Date", '>=%1', CutoffDateTime);
+
+        exit(not ComponentFluctuation.IsEmpty);
     end;
 
     //JMC - 2026-07-01
@@ -1284,17 +1289,21 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
                     HasChanges := true; // Componente nuevo
 
                 if HasChanges then begin
-                    // Guardar línea anterior si existe
-                    if PreviousLines."Line No." <> 0 then begin
-                        TempChangedLinesPrev.Init();
-                        TempChangedLinesPrev.TransferFields(PreviousLines);
-                        if not TempChangedLinesPrev.Insert() then;
-                    end;
+                    // Verificar si este componente fue modificado desde Coste Estándar
+                    // Si es así, no lo incluimos porque ya generó su propia notificación
+                    if not WasComponentModifiedFromStandardCost(CurrentLines."No.") then begin
+                        // Guardar línea anterior si existe
+                        if PreviousLines."Line No." <> 0 then begin
+                            TempChangedLinesPrev.Init();
+                            TempChangedLinesPrev.TransferFields(PreviousLines);
+                            if not TempChangedLinesPrev.Insert() then;
+                        end;
 
-                    // Guardar línea actual
-                    TempChangedLinesCurr.Init();
-                    TempChangedLinesCurr.TransferFields(CurrentLines);
-                    if not TempChangedLinesCurr.Insert() then;
+                        // Guardar línea actual
+                        TempChangedLinesCurr.Init();
+                        TempChangedLinesCurr.TransferFields(CurrentLines);
+                        if not TempChangedLinesCurr.Insert() then;
+                    end;
                 end;
             until CurrentLines.Next() = 0;
 
@@ -1313,10 +1322,12 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
                 CurrentLines.SetRange("Line No.", PreviousLines."Line No.");
 
                 if not CurrentLines.FindFirst() then begin
-                    // Componente eliminado
-                    TempChangedLinesPrev.Init();
-                    TempChangedLinesPrev.TransferFields(PreviousLines);
-                    if not TempChangedLinesPrev.Insert() then;
+                    // Componente eliminado - verificar que no fue por cambio de coste estándar
+                    if not WasComponentModifiedFromStandardCost(PreviousLines."No.") then begin
+                        TempChangedLinesPrev.Init();
+                        TempChangedLinesPrev.TransferFields(PreviousLines);
+                        if not TempChangedLinesPrev.Insert() then;
+                    end;
                 end;
             until PreviousLines.Next() = 0;
 
@@ -1942,6 +1953,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         TriggerSourceDescription: Text;
         SuppressEvents: Boolean;
         SuppressMessages: Boolean;
+        CurrentChangeSource: Option " ","AlxModCosteEstandar","Recipe Certification","Automatic Process","Manual";
         ConsolidatedEmailSubjectLbl: Label 'Fluctuación de coste detectada';
         ErrorEmailSubjectLbl: Label 'Recipe Cost Calculation Errors';
         ErrorEmailBodyLbl: Label '<h2>Recipe Cost Calculation Errors</h2><p>The following recipes had errors during cost recalculation:</p><p>%1</p>', Comment = '%1 = List of items with errors';

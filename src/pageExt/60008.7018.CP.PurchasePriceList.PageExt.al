@@ -2,6 +2,15 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
 {
     layout
     {
+        addafter(Description)
+        {
+            field(CPNegotiatedPrices; Rec."CP Negotiated Prices")
+            {
+                ApplicationArea = All;
+                Caption = 'Negotiated Prices';
+                ToolTip = 'If enabled, price changes in this list will not trigger recipe cost recalculations.';
+            }
+        }
         addafter(General)
         {
             group(Filters)
@@ -225,6 +234,16 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
             exit;
         end;
 
+        // Si la lista tiene marcado "Precios negociados", solo actualizar componentes sin procesar recetas
+        if Rec."CP Negotiated Prices" then begin
+            UpdateComponentsOnly(DraftItemNos, UpdatedComponents);
+            if UpdatedComponents > 0 then
+                Message(NegotiatedPricesMsg, UpdatedComponents)
+            else
+                Message(VerifyNoRecipesMsg);
+            exit;
+        end;
+
         RecipeFluctuationMgt.ClearEmailBuffer();
         RecipeFluctuationMgt.SetEmailTriggerSource(TriggerVerifyLinesLbl);
         RecipeFluctuationMgt.SetSuppressMessages(true);
@@ -275,6 +294,29 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
             Message(VerifyNoRecipesMsg);
     end;
 
+    local procedure UpdateComponentsOnly(DraftItemNos: List of [Code[20]]; var UpdatedComponents: Integer)
+    var
+        BOMComponent: Record "BOM Component";
+        BestVendorLine: Record "Price List Line";
+        ItemNo: Code[20];
+    begin
+        // Actualizar solo componentes de LM sin procesar fluctuaciones de recetas
+        foreach ItemNo in DraftItemNos do
+            if FindBestVendorLine(ItemNo, BestVendorLine) then begin
+                BOMComponent.Reset();
+                BOMComponent.SetRange(Type, BOMComponent.Type::Item);
+                BOMComponent.SetRange("No.", ItemNo);
+                if BOMComponent.FindSet() then
+                    repeat
+                        BOMComponent."Proveedor por Defecto" := BestVendorLine."Source No.";
+                        BOMComponent."Variant Code" := BestVendorLine."Variant Code";
+                        BOMComponent.CosteUnitario := BestVendorLine."Direct Unit Cost";
+                        BOMComponent.Modify(false);
+                        UpdatedComponents += 1;
+                    until BOMComponent.Next() = 0;
+            end;
+    end;
+
     local procedure FindBestVendorLine(ItemNo: Code[20]; var BestLine: Record "Price List Line"): Boolean
     begin
         BestLine.Reset();
@@ -318,6 +360,7 @@ pageextension 60008 "Purchase Price List" extends "Purchase Price List"   //7018
 
     var
         TriggerVerifyLinesLbl: Label 'Verificación de líneas de precios de compra';
+        NegotiatedPricesMsg: Label '%1 componentes de LM actualizados. Recálculo de costes de recetas omitido (Precios negociados activado).', Comment = '%1 = Number of components';
         VerifySuccessMsg: Label 'Proceso completado correctamente.\Se han actualizado %1 componentes de LM y recalculado %2 recetas.', Comment = '%1 = Updated components, %2 = Processed recipes';
         VerifyNoItemsMsg: Label 'No se encontraron líneas en estado borrador con productos para procesar.';
         VerifyNoRecipesMsg: Label 'Verificación completada. No se encontraron componentes de LM afectados por los productos modificados.';
