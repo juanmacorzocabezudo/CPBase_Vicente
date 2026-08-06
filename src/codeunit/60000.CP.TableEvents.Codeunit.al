@@ -321,8 +321,8 @@ codeunit 60000 "Table Events"
         BOMCommentVersion: Record 50026;
         BOMAditionalCost: Record 50029;
         BOMAditionalCostVersion: Record 50029;
-        RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
         ItemRefreshed: Record Item;
+        RecipeFluctuationMgt: Codeunit "CP Recipe Fluctuation Mgt";
         VersionNum: Integer;
         PreviousVersionNum: Integer;
         VersionArchivedMsg: Label 'Recipe version %1 has been successfully archived for item %2.', Comment = '%1 = Version Number, %2 = Item No.';
@@ -348,6 +348,9 @@ codeunit 60000 "Table Events"
                 VersionNum := PreviousVersionNum + 1;
             END ELSE
                 VersionNum := 1;
+
+            // Limpiar registros existentes de esta versión (por si hubo un intento fallido previo)
+            CleanupExistingVersionRecords(ItemRefreshed."No.", VersionNum);
 
             BOMVersionHeader.Init();
             BOMVersionHeader.VALIDATE("Item No.", ItemRefreshed."No.");
@@ -439,6 +442,40 @@ codeunit 60000 "Table Events"
 
         EXIT(ReturnCost);
     END;
+
+    //JMC - 2026-08-06
+    local procedure CleanupExistingVersionRecords(ItemNo: Code[20]; VersionNum: Integer)
+    var
+        BOMVersionHeader: Record 50024;
+        BOMVersionLines: Record 50025;
+        BOMCommentVersion: Record 50026;
+        BOMAditionalCostVersion: Record 50029;
+    begin
+        // Eliminar header si existe
+        BOMVersionHeader.Reset();
+        BOMVersionHeader.SetRange("Item No.", ItemNo);
+        BOMVersionHeader.SetRange("BOM Version", VersionNum);
+        if BOMVersionHeader.FindFirst() then
+            BOMVersionHeader.Delete();
+
+        // Eliminar líneas
+        BOMVersionLines.Reset();
+        BOMVersionLines.SetRange("Parent Item No.", ItemNo);
+        BOMVersionLines.SetRange("BOM Version", VersionNum);
+        BOMVersionLines.DeleteAll();
+
+        // Eliminar comentarios
+        BOMCommentVersion.Reset();
+        BOMCommentVersion.SetRange("No.", ItemNo);
+        BOMCommentVersion.SetRange("BOM Version", VersionNum);
+        BOMCommentVersion.DeleteAll();
+
+        // Eliminar costes adicionales
+        BOMAditionalCostVersion.Reset();
+        BOMAditionalCostVersion.SetRange("Item No", ItemNo);
+        BOMAditionalCostVersion.SetRange("BOM Version", VersionNum);
+        BOMAditionalCostVersion.DeleteAll();
+    end;
 
     #endregion
 }
