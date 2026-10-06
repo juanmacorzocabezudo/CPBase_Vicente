@@ -1044,6 +1044,7 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     procedure CompareAndSendBOMVersionEmail(ItemNo: Code[20]; PreviousVersion: Integer; CurrentVersion: Integer)
     var
         Item: Record Item;
+        User: Record User;
         FixedFluctuation: Record "CP Recipe Price Fluctuation";
         CurrentHeader: Record 50024;
         CurrentBOMLines: Record 50025;
@@ -1053,7 +1054,9 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         ComponentsTableHtml: Text;
         Recipients: Text;
         Subject: Text;
+        ModifiedByName: Text[80];
         SubjectLbl: Label 'Cambios en versión de receta - %1 (Receta fijada → v%2)', Comment = '%1=Item No, %2=Current Version';
+        ModifiedByLbl: Label '<p><strong>Modificado por:</strong> %1</p>', Comment = '%1 = User full name';
     begin
         // Obtener la versión actual archivada primero para saber el coste
         CurrentHeader.Reset();
@@ -1080,6 +1083,12 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
         EmailBody := '<html><body>';
         EmailBody += '<h2>Cambios en versión de receta certificada</h2>';
         EmailBody += '<p><strong>Producto:</strong> ' + ItemNo + ' - ' + Item.Description + '</p>';
+        ModifiedByName := CopyStr(UserId(), 1, MaxStrLen(ModifiedByName));
+        User.SetRange("User Name", UserId());
+        if User.FindFirst() then
+            if User."Full Name" <> '' then
+                ModifiedByName := User."Full Name";
+        EmailBody += StrSubstNo(ModifiedByLbl, ModifiedByName);
         EmailBody += '<br/>';
         EmailBody += '<table width="100%" cellpadding="10"><tr>';
         EmailBody += '<td width="50%" valign="top"><h3 style="background-color:#000000;color:#ffffff;padding:10px;">RECETA FIJADA</h3>' + FixedTableHtml + '</td>';

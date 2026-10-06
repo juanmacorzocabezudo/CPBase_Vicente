@@ -358,6 +358,11 @@
           <note from="Developer" annotates="general" priority="2">%1=Item No, %2=Current Version</note>
           <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - Method CompareAndSendBOMVersionEmail - NamedType SubjectLbl</note>
         </trans-unit>
+        <trans-unit id="Codeunit 3519696695 - Method 4122576738 - NamedType 3433531972" size-unit="char" translate="yes" xml:space="preserve">
+          <source>&lt;p&gt;&lt;strong&gt;Modificado por:&lt;/strong&gt; %1&lt;/p&gt;</source>
+          <note from="Developer" annotates="general" priority="2">%1 = User full name</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Codeunit CP Recipe Fluctuation Mgt - Method CompareAndSendBOMVersionEmail - NamedType ModifiedByLbl</note>
+        </trans-unit>
         <trans-unit id="Codeunit 890326410 - NamedType 2906281135" size-unit="char" translate="yes" xml:space="preserve">
           <source>Do you want to activate product %1 and change its number to %2, including all its BOM components?</source>
           <note from="Developer" annotates="general" priority="2">%1 = Old Item No., %2 = New Item No.</note>
