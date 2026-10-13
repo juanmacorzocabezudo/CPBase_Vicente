@@ -63,6 +63,12 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Fluctuation Setup - Field PT Email Recipients - Property Caption</note>
         </trans-unit>
+        <trans-unit id="Table 891034288 - Field 3324045609 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Sender Email</source>
+          <target>Email remitente</target>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Table CP Recipe Fluctuation Setup - Field Sender Email - Property Caption</note>
+        </trans-unit>
         <trans-unit id="Table 836856850 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Recipe Price Fluctuation</source>
           <target>Fluctuación de precio de receta</target>
@@ -794,6 +800,18 @@
           <target>Especifica la fecha y hora de la última ejecución del procesamiento de fluctuación de recetas.</target>
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Page CP Recipe Fluctuation Setup - Control LastRunDate - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="Page 891034288 - Control 1828965977 - Property 1295455071" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Specifies the sender email address used to send fluctuation and recipe version change notifications.</source>
+          <target>Especifica la dirección de correo remitente utilizada para enviar notificaciones de fluctuación y avisos de cambios de versión de receta.</target>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Page CP Recipe Fluctuation Setup - Control SenderEmail - Property ToolTip</note>
+        </trans-unit>
+        <trans-unit id="Page 891034288 - Control 1828965977 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Sender Email</source>
+          <target>Email remitente</target>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Page CP Recipe Fluctuation Setup - Control SenderEmail - Property Caption</note>
         </trans-unit>
         <trans-unit id="Page 891034288 - Control 892537660 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Email Recipients</source>

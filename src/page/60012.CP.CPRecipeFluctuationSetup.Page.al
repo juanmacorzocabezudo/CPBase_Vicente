@@ -21,27 +21,53 @@ page 60012 "CP Recipe Fluctuation Setup"
                     ApplicationArea = All;
                     ToolTip = 'Specifies a custom email subject for fluctuation notifications. Leave empty to use the default subject.';
                 }
+                field(SenderEmail; Rec."Sender Email")
+                {
+                    ApplicationArea = All;
+                    Caption = 'Sender Email';
+                    ToolTip = 'Specifies the sender email address used to send fluctuation and recipe version change notifications.';
+
+                    trigger OnAssistEdit()
+                    var
+                        TempEmailAccount: Record "Email Account";
+                        EmailAccounts: Codeunit "Email Account";
+                        EmailAccountsPage: Page "Email Accounts";
+                    begin
+                        EmailAccounts.GetAllAccounts(false, TempEmailAccount);
+                        EmailAccountsPage.SetTableView(TempEmailAccount);
+                        EmailAccountsPage.LookupMode(true);
+                        if EmailAccountsPage.RunModal() = Action::LookupOK then begin
+                            EmailAccountsPage.GetRecord(TempEmailAccount);
+                            Rec."Email Account Id" := TempEmailAccount."Account Id";
+                            Rec."Email Connector" := TempEmailAccount.Connector;
+                            Rec."Email Account Name" := TempEmailAccount.Name;
+                            Rec."Sender Email" := TempEmailAccount."Email Address";
+                            Rec.Modify();
+                        end;
+                    end;
+                }
                 field(EmailAccountName; Rec."Email Account Name")
                 {
                     ApplicationArea = All;
-                    Caption = 'Email Account';
+                    Caption = 'Email Account Name';
                     ToolTip = 'Specifies the email account used to send fluctuation notifications.';
                     Editable = false;
 
                     trigger OnAssistEdit()
                     var
-                        EmailAccount: Record "Email Account";
+                        TempEmailAccount: Record "Email Account";
                         EmailAccounts: Codeunit "Email Account";
                         EmailAccountsPage: Page "Email Accounts";
                     begin
-                        EmailAccounts.GetAllAccounts(false, EmailAccount);
-                        EmailAccountsPage.SetTableView(EmailAccount);
+                        EmailAccounts.GetAllAccounts(false, TempEmailAccount);
+                        EmailAccountsPage.SetTableView(TempEmailAccount);
                         EmailAccountsPage.LookupMode(true);
                         if EmailAccountsPage.RunModal() = Action::LookupOK then begin
-                            EmailAccountsPage.GetRecord(EmailAccount);
-                            Rec."Email Account Id" := EmailAccount."Account Id";
-                            Rec."Email Connector" := EmailAccount.Connector;
-                            Rec."Email Account Name" := EmailAccount.Name;
+                            EmailAccountsPage.GetRecord(TempEmailAccount);
+                            Rec."Email Account Id" := TempEmailAccount."Account Id";
+                            Rec."Email Connector" := TempEmailAccount.Connector;
+                            Rec."Email Account Name" := TempEmailAccount.Name;
+                            Rec."Sender Email" := TempEmailAccount."Email Address";
                             Rec.Modify();
                         end;
                     end;

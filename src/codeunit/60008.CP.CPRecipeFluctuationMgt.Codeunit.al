@@ -485,13 +485,18 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     [TryFunction]
     local procedure TrySendEmail(Recipients: Text; Subject: Text; Body: Text)
     var
+        FluctuationSetup: Record "CP Recipe Fluctuation Setup";
+        TempEmailAccount: Record "Email Account";
         EmailMessage: Codeunit "Email Message";
         Email: Codeunit Email;
         RecipientList: List of [Text];
     begin
         RecipientList := Recipients.Split(';');
         EmailMessage.Create(RecipientList, Subject, Body, true);
-        Email.Send(EmailMessage);
+        if FluctuationSetup.GetEmailAccount(TempEmailAccount) then
+            Email.Send(EmailMessage, TempEmailAccount)
+        else
+            Email.Send(EmailMessage);
     end;
 
     local procedure CreateAndSendEmail(Recipients: Text; Subject: Text; Body: Text)
@@ -1558,13 +1563,18 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     [TryFunction]
     local procedure TrySendBOMVersionEmail(Recipients: Text; Subject: Text; Body: Text)
     var
+        FluctuationSetup: Record "CP Recipe Fluctuation Setup";
+        TempEmailAccount: Record "Email Account";
         EmailMessage: Codeunit "Email Message";
         Email: Codeunit Email;
         RecipientList: List of [Text];
     begin
         RecipientList := Recipients.Split(';');
         EmailMessage.Create(RecipientList, Subject, Body, true);
-        Email.Send(EmailMessage);
+        if FluctuationSetup.GetEmailAccount(TempEmailAccount) then
+            Email.Send(EmailMessage, TempEmailAccount)
+        else
+            Email.Send(EmailMessage);
     end;
 
     local procedure SendBOMVersionEmail(Recipients: Text; Subject: Text; Body: Text)
