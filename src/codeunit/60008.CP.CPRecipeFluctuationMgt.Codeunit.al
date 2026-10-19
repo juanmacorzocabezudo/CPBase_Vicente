@@ -397,9 +397,19 @@ codeunit 60008 "CP Recipe Fluctuation Mgt"
     local procedure SendConsolidatedEmailForGroup(Recipients: Text; Subject: Text; var TempBufferEntries: Record "CP Recipe Price Fluctuation" temporary; IncludeCosts: Boolean)
     var
         Item: Record Item;
+        User: Record User;
         Body: Text;
+        ModifiedByName: Text[80];
+        ModifiedByLbl: Label '<p><strong>Modificado por:</strong> %1</p>', Comment = '%1 = User full name';
     begin
         Body := '<h2>Fluctuación de coste detectada</h2>';
+
+        ModifiedByName := CopyStr(UserId(), 1, MaxStrLen(ModifiedByName));
+        User.SetRange("User Name", UserId());
+        if User.FindFirst() then
+            if User."Full Name" <> '' then
+                ModifiedByName := User."Full Name";
+        Body += StrSubstNo(ModifiedByLbl, ModifiedByName);
 
         if TriggerSourceDescription <> '' then
             Body += StrSubstNo(EmailOriginLbl, TriggerSourceDescription);
