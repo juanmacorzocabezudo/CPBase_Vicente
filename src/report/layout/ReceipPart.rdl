@@ -2606,6 +2606,9 @@
                                     </Paragraph>
                                   </Paragraphs>
                                   <rd:DefaultName>Elaboration</rd:DefaultName>
+                                  <Visibility>
+                                    <Hidden>=Fields!ElaborationImageBase64.Value &lt;&gt; ""</Hidden>
+                                  </Visibility>
                                   <Top>0.20278in</Top>
                                   <Left>0.00168in</Left>
                                   <Height>4in</Height>
@@ -2621,6 +2624,26 @@
                                     <PaddingBottom>6pt</PaddingBottom>
                                   </Style>
                                 </Textbox>
+                                <Image Name="ElaborationPng">
+                                  <Source>Database</Source>
+                                  <Value>=System.Convert.FromBase64String(Fields!ElaborationImageBase64.Value)</Value>
+                                  <MIMEType>image/png</MIMEType>
+                                  <Sizing>FitProportional</Sizing>
+                                  <Top>0.20278in</Top>
+                                  <Left>0.00168in</Left>
+                                  <Height>4in</Height>
+                                  <Width>7.82853in</Width>
+                                  <ZIndex>2</ZIndex>
+                                  <Visibility>
+                                    <Hidden>=Fields!ElaborationImageBase64.Value = ""</Hidden>
+                                  </Visibility>
+                                  <DataElementOutput>NoOutput</DataElementOutput>
+                                  <Style>
+                                    <Border>
+                                      <Style>None</Style>
+                                    </Border>
+                                  </Style>
+                                </Image>
                               </ReportItems>
                               <KeepTogether>true</KeepTogether>
                               <Top>3.31852in</Top>
@@ -3273,6 +3296,9 @@ End Function
         </Field>
         <Field Name="ElaborationText">
           <DataField>ElaborationText</DataField>
+        </Field>
+        <Field Name="ElaborationImageBase64">
+          <DataField>ElaborationImageBase64</DataField>
         </Field>
         <Field Name="LineNo_BOMComponent">
           <DataField>LineNo_BOMComponent</DataField>

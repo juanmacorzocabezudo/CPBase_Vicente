@@ -44,6 +44,9 @@ report 60000 "Receip Part"
             column(ElaborationText; ElaborationText)
             {
             }
+            column(ElaborationImageBase64; ElaborationImageBase64)
+            {
+            }
             dataitem("BOM Component"; "BOM Component")
             {
                 CalcFields = "Assembly BOM";
@@ -330,6 +333,7 @@ report 60000 "Receip Part"
 
                 ElaborationText := Item.GetElaboration();
                 ElaborationText := PrepareHtmlForRdlc(ElaborationText);
+                ElaborationImageBase64 := RecipePrintImage.GetImage(Item."No.");
             end;
         }
     }
@@ -430,6 +434,8 @@ report 60000 "Receip Part"
         varDescripcion: Text[100];
         VarQtyCaliente: Decimal;
         ElaborationText: Text;
+        ElaborationImageBase64: Text;
+        RecipePrintImage: Codeunit "CP Recipe Print Image";
 
     /// <summary>
     /// Prepares the HTML from BC Rich Text Editor (CKEditor 5) for RDLC rendering.
@@ -451,8 +457,7 @@ report 60000 "Receip Part"
         // RDLC explicitly supports <FONT color="..."> for text coloring
         Result := ConvertColorSpansToFontTags(Result);
 
-        // Step 2: Strip <span style="background-color:..."> tags (RDLC cannot render background colors via HTML)
-        Result := StripSpansByStylePrefix(Result, '<span style="background-color:');
+        // Step 2: Keep background-color spans in the HTML; RDLC does not render inline backgrounds.
 
         // Step 3: Convert any remaining HSL/HSLA color values to hex (fallback for other inline styles)
         Result := ConvertHslColorsToHex(Result);
@@ -460,7 +465,10 @@ report 60000 "Receip Part"
         // Step 3b: Convert any remaining RGB/RGBA color values to hex
         Result := ConvertRgbColorsToHex(Result);
 
-        // Step 4: Convert CKEditor 5 semantic tags to RDLC-supported equivalents
+        // Step 4: Convert paragraph alignment styles to HTML attributes supported by RDLC
+        Result := ConvertTextAlignmentStyles(Result);
+
+        // Step 5: Convert CKEditor 5 semantic tags to RDLC-supported equivalents
         Result := Result.Replace('<strong>', '<b>');
         Result := Result.Replace('</strong>', '</b>');
         Result := Result.Replace('<Strong>', '<b>');
@@ -470,12 +478,36 @@ report 60000 "Receip Part"
         Result := Result.Replace('<Em>', '<i>');
         Result := Result.Replace('</Em>', '</i>');
 
-        // Step 5: Remove unsupported container tags
+        // Step 6: Remove unsupported container tags
         Result := Result.Replace('<figure>', '');
         Result := Result.Replace('</figure>', '');
         Result := Result.Replace('<figcaption>', '');
         Result := Result.Replace('</figcaption>', '');
 
+        exit(Result);
+    end;
+
+    local procedure ConvertTextAlignmentStyles(HtmlText: Text): Text
+    var
+        Result: Text;
+    begin
+        Result := HtmlText;
+        Result := Result.Replace('style="text-align:center;"', 'align="center"');
+        Result := Result.Replace('style="text-align: center;"', 'align="center"');
+        Result := Result.Replace('style="text-align:center"', 'align="center"');
+        Result := Result.Replace('style="text-align: center"', 'align="center"');
+        Result := Result.Replace('style="text-align:left;"', 'align="left"');
+        Result := Result.Replace('style="text-align: left;"', 'align="left"');
+        Result := Result.Replace('style="text-align:left"', 'align="left"');
+        Result := Result.Replace('style="text-align: left"', 'align="left"');
+        Result := Result.Replace('style="text-align:right;"', 'align="right"');
+        Result := Result.Replace('style="text-align: right;"', 'align="right"');
+        Result := Result.Replace('style="text-align:right"', 'align="right"');
+        Result := Result.Replace('style="text-align: right"', 'align="right"');
+        Result := Result.Replace('style="text-align:justify;"', 'align="justify"');
+        Result := Result.Replace('style="text-align: justify;"', 'align="justify"');
+        Result := Result.Replace('style="text-align:justify"', 'align="justify"');
+        Result := Result.Replace('style="text-align: justify"', 'align="justify"');
         exit(Result);
     end;
 
@@ -545,64 +577,6 @@ report 60000 "Receip Part"
             end;
 
             SpanPos := StrPos(LowerCase(Remaining), SearchToken);
-        end;
-
-        Result += Remaining;
-        exit(Result);
-    end;
-
-    /// <summary>
-    /// Strips span tags matching a given style prefix, keeping the inner content.
-    /// Used to remove background-color spans that RDLC cannot render.
-    /// </summary>
-    local procedure StripSpansByStylePrefix(HtmlText: Text; StylePrefix: Text): Text
-    var
-        Result: Text;
-        Remaining: Text;
-        LowerPrefix: Text;
-        SpanPos: Integer;
-        TagEndPos: Integer;
-        EndSpanPos: Integer;
-    begin
-        LowerPrefix := LowerCase(StylePrefix);
-        Remaining := HtmlText;
-        Result := '';
-
-        SpanPos := StrPos(LowerCase(Remaining), LowerPrefix);
-        while SpanPos > 0 do begin
-            // Append text before the span
-            if SpanPos > 1 then
-                Result += CopyStr(Remaining, 1, SpanPos - 1);
-
-            Remaining := CopyStr(Remaining, SpanPos);
-
-            // Find closing > of the opening span tag
-            TagEndPos := StrPos(Remaining, '>');
-            if TagEndPos = 0 then begin
-                Result += Remaining;
-                exit(Result);
-            end;
-
-            // Skip the opening span tag entirely (don't add to result)
-            if TagEndPos < StrLen(Remaining) then
-                Remaining := CopyStr(Remaining, TagEndPos + 1)
-            else
-                Remaining := '';
-
-            // Find and skip the closing </span>
-            EndSpanPos := StrPos(LowerCase(Remaining), '</span>');
-            if EndSpanPos > 0 then begin
-                // Keep the content between the tags
-                if EndSpanPos > 1 then
-                    Result += CopyStr(Remaining, 1, EndSpanPos - 1);
-                // Skip </span> (7 chars)
-                if (EndSpanPos + 7) <= StrLen(Remaining) then
-                    Remaining := CopyStr(Remaining, EndSpanPos + 7)
-                else
-                    Remaining := '';
-            end;
-
-            SpanPos := StrPos(LowerCase(Remaining), LowerPrefix);
         end;
 
         Result += Remaining;

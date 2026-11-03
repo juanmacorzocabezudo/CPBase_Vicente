@@ -633,6 +633,26 @@
           <note from="Developer" annotates="general" priority="2"></note>
           <note from="Xliff Generator" annotates="general" priority="3">Page CP BOM Aditional Cost - Action AddCostFromTemplate - Property Caption</note>
         </trans-unit>
+        <trans-unit id="Page 3874728001 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Preparing receipt part</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Page CP Elaboration Print Prep - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Page 3874728001 - NamedType 2757779888" size-unit="char" translate="yes" xml:space="preserve">
+          <source>The recipe elaboration could not be prepared for printing: %1</source>
+          <note from="Developer" annotates="general" priority="2">%1 = Rendering error</note>
+          <note from="Xliff Generator" annotates="general" priority="3">Page CP Elaboration Print Prep - NamedType RenderFailedErr</note>
+        </trans-unit>
+        <trans-unit id="Page 3874728001 - Control 1034101843 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Preparing report</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Page CP Elaboration Print Prep - Control Preparation - Property Caption</note>
+        </trans-unit>
+        <trans-unit id="Page 3874728001 - Control 2492999225 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
+          <source>Preparing the formatted elaboration for the PDF...</source>
+          <note from="Developer" annotates="general" priority="2"></note>
+          <note from="Xliff Generator" annotates="general" priority="3">Page CP Elaboration Print Prep - Control PreparingMessage - Property Caption</note>
+        </trans-unit>
         <trans-unit id="Page 891034288 - Property 2879900210" size-unit="char" translate="yes" xml:space="preserve">
           <source>Recipe Fluctuation Setup</source>
           <note from="Developer" annotates="general" priority="2"></note>

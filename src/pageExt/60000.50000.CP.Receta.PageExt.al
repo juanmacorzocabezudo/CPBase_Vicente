@@ -224,8 +224,18 @@ pageextension 60000 "Receta" extends Receta //50000
                 PromotedIsBig = true;
 
                 trigger OnAction()
+                var
+                    ElaborationPrintPrep: Page "CP Elaboration Print Prep";
+                    RecipePrintImage: Codeunit "CP Recipe Print Image";
                 begin
+                    RecipePrintImage.ClearImage();
+                    ElaborationPrintPrep.SetRecipe(Rec."No.");
+                    ElaborationPrintPrep.RunModal();
+                    if not RecipePrintImage.HasImage(Rec."No.") then
+                        exit;
+
                     Report.Run(Report::"Receip Part", true, false, Rec);
+                    RecipePrintImage.ClearImage();
                 end;
             }
         }

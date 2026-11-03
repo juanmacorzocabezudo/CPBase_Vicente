@@ -16,6 +16,8 @@ permissionset 60000 "CP Base"
         codeunit "CP Recipe Fluctuation Mgt" = X,
         codeunit "CP Recipe Fluctuation Install" = X,
         codeunit "Assembly Elaboration Events" = X,
+        codeunit "CP Recipe Print Image" = X,
+        page "CP Elaboration Print Prep" = X,
         page "Event Type List" = X,
         page "Event Type Card" = X,
         page "WS Purchase Prices" = X,
