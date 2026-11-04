@@ -30,7 +30,7 @@ page 60000 "CP Elaboration Print Prep"
 
                     trigger ControlReady()
                     begin
-                        CurrPage.Renderer.RenderHtml(ElaborationHtml);
+                        CurrPage.Renderer.RenderHtml(ElaborationHtml, RenderWidthPx);
                     end;
 
                     trigger ImageReady(ImageBase64: Text)
@@ -50,13 +50,15 @@ page 60000 "CP Elaboration Print Prep"
         }
     }
 
-    procedure SetRecipe(ItemNo: Code[20])
+    procedure SetRecipe(ItemNo: Code[20]; RenderWidth: Integer)
     begin
         Rec.Get(ItemNo);
         ElaborationHtml := Rec.GetElaboration();
+        RenderWidthPx := RenderWidth;
     end;
 
     var
         ElaborationHtml: Text;
+        RenderWidthPx: Integer;
         RenderFailedErr: Label 'The recipe elaboration could not be prepared for printing: %1', Comment = '%1 = Rendering error';
 }

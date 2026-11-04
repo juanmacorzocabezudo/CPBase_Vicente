@@ -178,6 +178,9 @@
                             </Paragraph>
                           </Paragraphs>
                           <rd:DefaultName>Textbox60</rd:DefaultName>
+                          <Visibility>
+                            <Hidden>=Max(Fields!ElaborationImageBase64_Item.Value) &lt;&gt; ""</Hidden>
+                          </Visibility>
                           <Style>
                             <Border>
                               <Color>LightGrey</Color>
@@ -2509,6 +2512,32 @@
                             <PaddingBottom>2pt</PaddingBottom>
                           </Style>
                         </Textbox>
+                        <Image Name="ElaborationPng">
+                          <Source>Database</Source>
+                          <Value>=System.Convert.FromBase64String(Max(Fields!ElaborationImageBase64_Item.Value))</Value>
+                          <MIMEType>image/png</MIMEType>
+                          <Sizing>AutoSize</Sizing>
+                          <Top>0in</Top>
+                          <Left>0in</Left>
+                          <Height>4in</Height>
+                          <Width>7.07834in</Width>
+                          <ZIndex>1</ZIndex>
+                          <Visibility>
+                            <Hidden>=Max(Fields!ElaborationImageBase64_Item.Value) = ""</Hidden>
+                          </Visibility>
+                          <DataElementOutput>NoOutput</DataElementOutput>
+                          <Style>
+                            <Border>
+                              <Color>Black</Color>
+                              <Style>Solid</Style>
+                              <Width>1pt</Width>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Image>
                       </CellContents>
                     </TablixCell>
                   </TablixCells>
@@ -4154,6 +4183,9 @@ End Function
         </Field>
         <Field Name="Elaboration_Item">
           <DataField>Elaboration_Item</DataField>
+        </Field>
+        <Field Name="ElaborationImageBase64_Item">
+          <DataField>ElaborationImageBase64_Item</DataField>
         </Field>
       </Fields>
       <Query>

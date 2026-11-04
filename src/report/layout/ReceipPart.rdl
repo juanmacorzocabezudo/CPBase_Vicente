@@ -2628,7 +2628,7 @@
                                   <Source>Database</Source>
                                   <Value>=System.Convert.FromBase64String(Fields!ElaborationImageBase64.Value)</Value>
                                   <MIMEType>image/png</MIMEType>
-                                  <Sizing>FitProportional</Sizing>
+                                  <Sizing>AutoSize</Sizing>
                                   <Top>0.20278in</Top>
                                   <Left>0.00168in</Left>
                                   <Height>4in</Height>

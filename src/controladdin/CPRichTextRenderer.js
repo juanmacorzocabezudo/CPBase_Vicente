@@ -1,8 +1,8 @@
 (function () {
     const allowedTags = new Set([
-        'a', 'b', 'blockquote', 'br', 'caption', 'div', 'em', 'figcaption', 'figure',
+        'a', 'b', 'blockquote', 'br', 'caption', 'center', 'div', 'em', 'figcaption', 'figure', 'font',
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'i', 'li', 'ol', 'p', 's', 'span',
-        'img', 'strong', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'u', 'ul'
+        'img', 'mark', 'strong', 'strike', 'table', 'tbody', 'td', 'th', 'thead', 'tr', 'u', 'ul'
     ]);
     const blockedTags = new Set([
         'audio', 'base', 'button', 'embed', 'form', 'iframe', 'input', 'link', 'meta',
@@ -11,11 +11,9 @@
     const allowedStyles = new Set([
         'background-color', 'color', 'font-family', 'font-size', 'font-style',
         'font-weight', 'height', 'line-height', 'margin', 'margin-bottom', 'margin-left',
-        'margin-right', 'margin-top', 'max-height', 'max-width', 'object-fit',
+        'list-style-type', 'margin-right', 'margin-top', 'max-height', 'max-width', 'object-fit',
         'text-align', 'text-decoration', 'width'
     ]);
-    const allowedAlignments = new Set(['center', 'justify', 'left', 'right']);
-
     function safeImageSource(source) {
         const dataImagePattern = /^data:image\/(?:png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$/i;
         if (dataImagePattern.test(source))
@@ -83,9 +81,43 @@
                     cleanElement.style.setProperty(property, value);
             }
         }
-        const alignment = (node.getAttribute('align') || '').toLowerCase();
-        if (allowedAlignments.has(alignment))
-            cleanElement.style.textAlign = alignment;
+        if (tagName === 'center' && !cleanElement.style.textAlign)
+            cleanElement.style.textAlign = 'center';
+
+        const classNames = (node.getAttribute('class') || '').toLowerCase().split(/\s+/);
+        for (const className of classNames) {
+            const classAlignment = className.match(/^(?:text-align|ck-align|image-style-align|align)-(center|justify|left|right)$/);
+            if (classAlignment && !cleanElement.style.textAlign)
+                cleanElement.style.textAlign = classAlignment[1];
+        }
+
+        if (tagName === 'font') {
+            const color = node.getAttribute('color') || '';
+            const face = node.getAttribute('face') || '';
+            const size = Number(node.getAttribute('size'));
+            const legacyFontSizes = ['', '10px', '12px', '14px', '16px', '18px', '24px', '36px'];
+            if (color && CSS.supports('color', color) && !cleanElement.style.color)
+                cleanElement.style.color = color;
+            if (face && !/[;{}]/.test(face) && CSS.supports('font-family', face) && !cleanElement.style.fontFamily)
+                cleanElement.style.fontFamily = face;
+            if (Number.isInteger(size) && size > 0 && size < legacyFontSizes.length && !cleanElement.style.fontSize)
+                cleanElement.style.fontSize = legacyFontSizes[size];
+        }
+
+        if (tagName === 'li') {
+            const list = node.parentElement;
+            const isOrderedList = list && list.tagName.toLowerCase() === 'ol';
+            let marker = '\u2022 ';
+            if (isOrderedList) {
+                const items = Array.from(list.children).filter(function (child) { return child.tagName.toLowerCase() === 'li'; });
+                const listStart = Number(list.getAttribute('start')) || 1;
+                marker = String(listStart + items.indexOf(node)) + '. ';
+            }
+            cleanElement.style.listStyleType = 'none';
+            const markerElement = outputDocument.createElement('span');
+            markerElement.textContent = marker;
+            cleanElement.insertBefore(markerElement, cleanElement.firstChild);
+        }
 
         if (tagName === 'a') {
             const href = node.getAttribute('href') || '';
@@ -119,18 +151,32 @@
         }
     }
 
-    function drawDomBackgrounds(context, host, hostRect) {
+    function horizontalAlignmentOffset(element, host, hostRect, scale) {
+        const block = element.closest('p,div,li,center,h1,h2,h3,h4,h5,h6,blockquote') || host;
+        const alignment = window.getComputedStyle(block).textAlign;
+        if (alignment !== 'center' && alignment !== 'right')
+            return 0;
+
+        const blockRect = block.getBoundingClientRect();
+        const anchor = alignment === 'center'
+            ? blockRect.left - hostRect.left + blockRect.width / 2
+            : blockRect.right - hostRect.left;
+        return anchor * (1 - scale) / scale;
+    }
+
+    function drawDomBackgrounds(context, host, hostRect, scale) {
         for (const element of host.querySelectorAll('*')) {
             const style = window.getComputedStyle(element);
             if (isTransparent(style.backgroundColor))
                 continue;
             context.fillStyle = style.backgroundColor;
+            const alignmentOffset = horizontalAlignmentOffset(element, host, hostRect, scale);
             for (const rect of element.getClientRects())
-                context.fillRect(rect.left - hostRect.left, rect.top - hostRect.top, rect.width, rect.height);
+                context.fillRect(rect.left - hostRect.left + alignmentOffset, rect.top - hostRect.top, rect.width, rect.height);
         }
     }
 
-    function drawDomImages(context, host, hostRect, maxWidth) {
+    function drawDomImages(context, host, hostRect, maxWidth, scale) {
         for (const image of host.querySelectorAll('img')) {
             const rect = image.getBoundingClientRect();
             if (!rect.width || !rect.height)
@@ -138,13 +184,13 @@
             const imageScale = Math.min(1, maxWidth / rect.width);
             const width = rect.width * imageScale;
             const height = rect.height * imageScale;
-            const x = (host.clientWidth - width) / 2;
+            const x = rect.left - hostRect.left + horizontalAlignmentOffset(image, host, hostRect, scale);
             const y = rect.top - hostRect.top;
             context.drawImage(image, x, y, width, height);
         }
     }
 
-    function drawDomText(context, host, hostRect) {
+    function drawDomText(context, host, hostRect, scale) {
         const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
         let textNode;
         while ((textNode = walker.nextNode())) {
@@ -181,7 +227,7 @@
 
             for (const line of lines.values()) {
                 const baseline = line.top - hostRect.top + (line.height - fontSize) / 2 + fontSize * 0.8;
-                const x = line.left - hostRect.left;
+                const x = line.left - hostRect.left + horizontalAlignmentOffset(textNode.parentElement, host, hostRect, scale);
                 context.fillText(line.text, x, baseline);
                 const decoration = style.textDecorationLine || style.textDecoration || '';
                 const width = context.measureText(line.text).width;
@@ -203,7 +249,7 @@
         }
     }
 
-    window.RenderHtml = async function (html) {
+    window.RenderHtml = async function (html, requestedWidth) {
         try {
             const parsed = new DOMParser().parseFromString(String(html || ''), 'text/html');
             const cleanDocument = document.implementation.createHTMLDocument('');
@@ -211,29 +257,34 @@
             for (const node of parsed.body.childNodes)
                 cleanRoot.appendChild(sanitizeNode(node, cleanDocument));
 
-            const width = 752;
-            const height = 384;
+            const width = Math.max(320, Math.min(Number(requestedWidth) || 752, 1600));
             const host = document.createElement('div');
             host.setAttribute('aria-hidden', 'true');
-            host.style.cssText = [
-                'position:fixed', 'left:-10000px', 'top:0', 'width:' + width + 'px',
-                'box-sizing:border-box', 'padding:8px',
-                'overflow:visible', 'background:#fff', 'color:#000',
-                'font:14px/normal "Segoe UI",sans-serif'
-            ].join(';');
-            host.innerHTML = cleanRoot.innerHTML;
             document.body.appendChild(host);
+            const shadowRoot = host.attachShadow({ mode: 'open' });
+            const isolationStyles = document.createElement('style');
+            isolationStyles.textContent = [
+                ':host { all: initial; position: fixed; left: -10000px; top: 0; width: ' + width + 'px; }',
+                '.content { all: initial; display: block; box-sizing: border-box; width: 100%; padding: 8px; overflow: visible; background: #fff; color: #000; font: 14px/normal "Segoe UI", sans-serif; text-align: left; }',
+                '.content img { max-width: 100%; }'
+            ].join('\n');
+            const content = document.createElement('div');
+            content.className = 'content';
+            content.innerHTML = cleanRoot.innerHTML;
+            shadowRoot.appendChild(isolationStyles);
+            shadowRoot.appendChild(content);
 
             await document.fonts.ready;
-            prepareImages(host);
-            await Promise.all(Array.from(host.querySelectorAll('img')).map(function (image) { return image.decode(); }));
+            prepareImages(content);
+            await Promise.all(Array.from(content.querySelectorAll('img')).map(function (image) { return image.decode(); }));
             await new Promise(function (resolve) {
                 requestAnimationFrame(function () { requestAnimationFrame(resolve); });
             });
 
-            const pixelScale = 2;
-            const renderScale = Math.min(1, (height - 16) / Math.max(1, host.scrollHeight - 16));
-            const xOffset = (width - width * renderScale) / 2;
+            const pixelScale = 1;
+            const height = Math.max(384, Math.ceil(content.scrollHeight));
+            const renderScale = 1;
+            const xOffset = 0;
             const yOffset = 8;
             const canvas = document.createElement('canvas');
             canvas.width = width * pixelScale;
@@ -241,11 +292,11 @@
             const context = canvas.getContext('2d');
             context.fillStyle = '#fff';
             context.fillRect(0, 0, canvas.width, canvas.height);
-            const hostRect = host.getBoundingClientRect();
+            const hostRect = content.getBoundingClientRect();
             context.setTransform(pixelScale * renderScale, 0, 0, pixelScale * renderScale, pixelScale * xOffset, pixelScale * yOffset);
-            drawDomBackgrounds(context, host, hostRect);
-            drawDomImages(context, host, hostRect, width - 16);
-            drawDomText(context, host, hostRect);
+            drawDomBackgrounds(context, content, hostRect, renderScale);
+            drawDomImages(context, content, hostRect, width - 16, renderScale);
+            drawDomText(context, content, hostRect, renderScale);
             document.body.removeChild(host);
 
             const imageBase64 = canvas.toDataURL('image/png').split(',')[1];

@@ -229,7 +229,7 @@ pageextension 60000 "Receta" extends Receta //50000
                     RecipePrintImage: Codeunit "CP Recipe Print Image";
                 begin
                     RecipePrintImage.ClearImage();
-                    ElaborationPrintPrep.SetRecipe(Rec."No.");
+                    ElaborationPrintPrep.SetRecipe(Rec."No.", 752);
                     ElaborationPrintPrep.RunModal();
                     if not RecipePrintImage.HasImage(Rec."No.") then
                         exit;

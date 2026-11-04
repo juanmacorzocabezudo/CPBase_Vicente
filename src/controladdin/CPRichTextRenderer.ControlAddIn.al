@@ -9,5 +9,5 @@ controladdin "CP Rich Text Renderer"
     event ImageReady(ImageBase64: Text);
     event RenderFailed(ErrorMessage: Text);
 
-    procedure RenderHtml(Html: Text);
+    procedure RenderHtml(Html: Text; RenderWidth: Integer);
 }

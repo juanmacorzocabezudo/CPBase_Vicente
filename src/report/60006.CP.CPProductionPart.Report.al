@@ -738,18 +738,14 @@ report 60006 "CP Production Part"
                 column(Elaboration_Item; VarElaboration)
                 {
                 }
+                column(ElaborationImageBase64_Item; RecipePrintImage.GetImage(ItemData."No."))
+                {
+                }
 
                 trigger OnAfterGetRecord()
-                var
-                    ElaborationInStream: InStream;
                 begin
-                    CLEAR(VarElaboration);
-                    ItemData.CalcFields("Elaboration");
-                    IF ItemData."Elaboration".HasValue() THEN BEGIN
-                        ItemData."Elaboration".CreateInStream(ElaborationInStream, TextEncoding::UTF8);
-                        ElaborationInStream.Read(VarElaboration);
-                        VarElaboration := PrepareHtmlForRdlc(VarElaboration);
-                    END;
+                    VarElaboration := ItemData.GetElaboration();
+                    VarElaboration := PrepareHtmlForRdlc(VarElaboration);
                 end;
             }
             trigger OnAfterGetRecord()
@@ -906,6 +902,7 @@ report 60006 "CP Production Part"
         VarElaboracionCaliente: Boolean;
         VarQtyCaliente: Decimal;
         VarElaboration: Text;
+        RecipePrintImage: Codeunit "CP Recipe Print Image";
 
     local procedure PrepareHtmlForRdlc(HtmlText: Text): Text
     var
